@@ -99,7 +99,9 @@ if REFRESH-AFTER-EXIT is not nil,
 refresh the current `pr-review' buffer after exit.
 If ALLOW-EMPTY is not nil, empty body is also considered a valid result."
   (let ((marker (point-marker))
-        (pr-path pr-review--pr-path))
+        (pr-path pr-review--pr-path)
+        (host pr-review--host)
+        (forge pr-review--forge))
     (with-current-buffer (generate-new-buffer "*pr-review input*")
       (pr-review-input-mode)
 
@@ -113,8 +115,10 @@ If ALLOW-EMPTY is not nil, empty body is also considered a valid result."
        pr-review--input-refresh-after-exit refresh-after-exit
        pr-review--input-prev-marker marker
        pr-review--input-allow-empty allow-empty
-       ;; for get-assignable-users
-       pr-review--pr-path pr-path)
+       ;; keep buffer-local states
+       pr-review--pr-path pr-path
+       pr-review--host host
+       pr-review--forge forge)
 
       (when open-callback
         (funcall open-callback))
