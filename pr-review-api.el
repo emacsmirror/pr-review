@@ -33,9 +33,9 @@
   :group 'pr-review)
 
 (defcustom pr-review-forges-alist
-  "TODO"
   '(("github.com" . (github nil nil))
     ("gitlab.com" . (gitlab nil nil)))
+  "TODO"
   :group 'pr-review
   :type '(alist :key-type string
                 :value-type (list (choice (const :tag "Github" github)
