@@ -22,6 +22,8 @@
 
 ;;
 
+;;; Code:
+
 (defun pr-review--glab-insert-labels-info (pr-info)
   (let-alist pr-info
     (when .labels.nodes
@@ -212,7 +214,7 @@
     )
   )
 
-(cl-defmethod pr-review--insert-pr (pr diff &context (pr-review-ghub-forge (eql 'gitlab)))
+(pr-review-defmethod-gitlab pr-review--insert-pr (pr diff)
   (magit-insert-section section (pr-review--root-section)
     (let-alist pr
       (oset section title .title)
@@ -222,10 +224,6 @@
         (propertize (alist-get 'title pr) 'face 'pr-review-title-face)))
     (insert "\n")
     (pr-review--glab-insert-pr-body pr diff)))
-
-;;; Code:
-
-
 
 (provide 'pr-review-glab-render)
 ;;; pr-review-glab-render.el ends here

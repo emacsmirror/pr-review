@@ -184,6 +184,7 @@
 (defclass pr-review--event-section (magit-section) ())
 
 (defvar-local pr-review--host nil "Remote hostname.")
+(defvar-local pr-review--forge nil "Remote forge type.")
 (defvar-local pr-review--pr-path nil "List of repo-owner, repo-name, pr-id.")
 (defvar-local pr-review--pr-info nil "Result of fetch-pr-info, useful for actions.")
 (defvar-local pr-review--pending-review-threads nil)
@@ -218,6 +219,14 @@ Set to nil to disable source language syntax highlighting."
     ("THUMBS_UP" . "👍"))
   "Alist of github reaction name to emoji unicode.
 See https://docs.github.com/en/graphql/reference/enums#reactioncontent")
+
+
+(defmacro pr-review-defmethod-gitlab (name args &rest body)
+  "Define a method for GitLab forge context.
+NAME is the method name, ARGS are the arguments (without context),
+and BODY is the method body."
+  `(cl-defmethod ,name (,@args &context (pr-review--forge (eql 'gitlab)))
+     ,@body))
 
 (provide 'pr-review-common)
 ;;; pr-review-common.el ends here

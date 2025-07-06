@@ -26,7 +26,7 @@
 
 (require 'pr-review-api)
 
-(cl-defmethod pr-review--fetch-pr-info (&context (pr-review-ghub-forge (eql 'gitlab)))
+(pr-review-defmethod-gitlab pr-review--fetch-pr-info ()
   (pcase-let ((`(,repo-owner ,repo-name ,pr-id) pr-review--pr-path))
     (let-alist (pr-review--execute-graphql
                 'get-merge-request
@@ -34,15 +34,15 @@
                   (iid . ,(format "%s" pr-id))))
       .project.mergeRequest)))
 
-(cl-defmethod pr-review--current-commit-base (&context (pr-review-ghub-forge (eql 'gitlab)))
+(pr-review-defmethod-gitlab pr-review--current-commit-base ()
   (let-alist pr-review--pr-info
     (or pr-review--selected-commit-base .diffRefs.baseSha)))
 
-(cl-defmethod pr-review--current-commit-head (&context (pr-review-ghub-forge (eql 'gitlab)))
+(pr-review-defmethod-gitlab pr-review--current-commit-head ()
   (let-alist pr-review--pr-info
     (or pr-review--selected-commit-head .diffRefs.headSha)))
 
-(cl-defmethod pr-review--fetch-compare (base-ref head-ref &context (pr-review-ghub-forge (eql 'gitlab)))
+(pr-review-defmethod-gitlab pr-review--fetch-compare (base-ref head-ref)
   (when-let* ((repo-owner (car pr-review--pr-path))
               (repo-name (cadr pr-review--pr-path))
               (resp (apply #'ghub-request

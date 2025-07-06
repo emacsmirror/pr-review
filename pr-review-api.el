@@ -64,7 +64,7 @@
 
 (defun pr-review--ghub-common-request-args ()
   "Return common args for `ghub-request' and `ghub-graphql'."
-  (let ((forge-info (cdr (alist-get pr-review--host pr-review-forges-alist nil nil 'equal))))
+  (let ((forge-info (alist-get pr-review--host pr-review-forges-alist nil nil 'equal)))
     (list :auth pr-review-ghub-auth-name
           :username (or (nth 2 forge-info) pr-review-ghub-username)
           :host (or (nth 1 forge-info) pr-review-ghub-host)
@@ -72,13 +72,13 @@
 
 (defun pr-review--get-graphql (name)
   "Get graphql content for NAME (symbol), cached."
-  (with-temp-buffer
-    (insert-file-contents-literally
-     (concat pr-review--bin-dir
-             "graphql/"
-             (when (eq (plist-get (pr-review--ghub-common-request-args) :forge) 'gitlab) "gitlab/")
-             (symbol-name name) ".graphql"))
-    (buffer-substring-no-properties (point-min) (point-max))))
+  (let ((filename (concat pr-review--bin-dir
+                          "graphql/"
+                          (when (eq pr-review--forge 'gitlab) "gitlab/")
+                          (symbol-name name) ".graphql")))
+    (with-temp-buffer
+      (insert-file-contents-literally filename)
+      (buffer-substring-no-properties (point-min) (point-max)))))
 
 (defun pr-review--execute-graphql-raw (query variables)
   "Execute graphql QUERY with VARIABLES, return result."

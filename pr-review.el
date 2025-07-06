@@ -220,7 +220,8 @@ and it will jump to first unread comment if ANCHOR is nil."
     (unless (eq major-mode 'pr-review-mode)
       (pr-review-mode))
     (setq-local pr-review--pr-path (list repo-owner repo-name pr-id)
-                pr-review--host host)
+                pr-review--host host
+                pr-review--forge (plist-get (pr-review--ghub-common-request-args) :forge))
     (let ((pr-review--last-read-time last-read-time))
       (pr-review-refresh))
     (unless (and anchor (pr-review-goto-database-id anchor))
