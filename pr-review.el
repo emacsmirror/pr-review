@@ -181,7 +181,7 @@ otherwise, ask interactively."
 
 ;;;###autoload
 (defun pr-review-url-parse (url)
-  "Return pr path (repo-owner repo-name pr-id) for URL, or nil on error."
+  "Return pr path (host repo-owner repo-name pr-id) for URL, or nil on error."
   (when-let* ((url-parsed (url-generic-parse-url url))
               (path (url-filename url-parsed)))
     (when (and (member (url-type url-parsed) '("http" "https"))
@@ -191,7 +191,8 @@ otherwise, ask interactively."
                                      "/-/merge_requests")  ;; gitlab
                                  "/" (group (+ (any digit))))
                              (url-filename url-parsed)))
-      (list (match-string 1 path)
+      (list (url-host url-parsed)
+            (match-string 1 path)
             (match-string 2 path)
             (string-to-number (match-string 3 path))))))
 
@@ -205,8 +206,8 @@ This is used to jump to specific section after opening the buffer."
       (match-string 1 fragment))))
 
 ;;;###autoload
-(defun pr-review-open (repo-owner repo-name pr-id &optional new-window anchor last-read-time)
-  "Open review buffer for REPO-OWNER/REPO-NAME PR-ID (number).
+(defun pr-review-open (host repo-owner repo-name pr-id &optional new-window anchor last-read-time)
+  "Open review buffer for REPO-OWNER/REPO-NAME PR-ID (number) in HOST.
 Open in current window if NEW-WINDOW is nil, in other window otherwise.
 ANCHOR is a database id that may be present in the url fragment
 of a github pr notification, if it's not nil, try to jump to specific
@@ -218,7 +219,8 @@ and it will jump to first unread comment if ANCHOR is nil."
   (with-current-buffer (get-buffer-create (format "*pr-review %s/%s/%s*" repo-owner repo-name pr-id))
     (unless (eq major-mode 'pr-review-mode)
       (pr-review-mode))
-    (setq-local pr-review--pr-path (list repo-owner repo-name pr-id))
+    (setq-local pr-review--pr-path (list repo-owner repo-name pr-id)
+                pr-review--host host)
     (let ((pr-review--last-read-time last-read-time))
       (pr-review-refresh))
     (unless (and anchor (pr-review-goto-database-id anchor))
@@ -255,7 +257,7 @@ It's used as the default value of `pr-review'."
           (default-pr-path (and default-url (pr-review-url-parse default-url)))
           (input-url (read-string (concat "URL to review"
                                           (when default-pr-path
-                                            (apply #'format " (default: %s/%s/%s)"
+                                            (apply #'format " (default: %s/%s/%s/%s)"
                                                    default-pr-path))
                                           ": "))))
      (if (string-empty-p input-url)

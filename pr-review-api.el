@@ -60,14 +60,11 @@
 (make-obsolete-variable 'pr-review-ghub-username 'pr-review-forges-alist "20250706")
 (make-obsolete-variable 'pr-review-ghub-host 'pr-review-forges-alist "20250706")
 
-(defvar-local pr-review--current-host nil
-  "Current's pr-review buffer's remote host.")
-
 (defvar pr-review--bin-dir (file-name-directory (or load-file-name buffer-file-name)))
 
 (defun pr-review--ghub-common-request-args ()
   "Return common args for `ghub-request' and `ghub-graphql'."
-  (let ((forge-info (cdr (alist-get pr-review--current-host pr-review-forges-alist nil nil 'equal))))
+  (let ((forge-info (cdr (alist-get pr-review--host pr-review-forges-alist nil nil 'equal))))
     (list :auth pr-review-ghub-auth-name
           :username (or (nth 2 forge-info) pr-review-ghub-username)
           :host (or (nth 1 forge-info) pr-review-ghub-host)
