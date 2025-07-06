@@ -1,0 +1,80 @@
+query($repo_path:ID!, $iid:String!) {
+  project(fullPath: $repo_path) {
+    mergeRequest(iid: $iid) {
+      id
+      author { name }
+      autoMergeEnabled
+      autoMergeStrategy
+      mergeable
+      subscribed
+
+      commits(first: 100) {
+        nodes {
+          sha
+          shortId
+          title
+        }
+      }
+      reviewers(first: 10) {
+        nodes {
+          name
+          mergeRequestInteraction { reviewState }
+        }
+      }
+      assignees(first: 10) {
+        nodes { name }
+      }
+      approved
+      approvedBy(first: 10) {
+        nodes { name }
+      }
+
+      diffRefs { baseSha headSha }
+      diffStatsSummary { fileCount additions changes deletions }
+
+      createdAt
+      state
+      sourceBranch
+      targetBranch
+
+      title
+      description
+      descriptionHtml
+
+      webUrl
+
+      labels(first: 10) {
+        nodes {
+          color
+          textColor
+          title
+        }
+      }
+
+      discussions(last: 100) {
+        nodes {
+          createdAt
+          id
+          replyId
+          resolvable
+          resolved
+
+          notes(last: 100) {
+            nodes {
+              id
+              author { name }
+              body
+              bodyHtml
+              createdAt
+
+              position { filePath newLine oldLine diffRefs { baseSha headSha } }
+
+              system
+              systemNoteMetadata { action }
+            }
+          }
+        }
+      }
+    }
+  }
+}

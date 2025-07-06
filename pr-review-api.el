@@ -44,20 +44,31 @@
                  (string :tag "Host value"))
   :group 'pr-review)
 
+(defcustom pr-review-ghub-forge nil
+  "Ghub forge used by `pr-review', see `ghub-request' for details.
+By default (nil), github API is used; also possible to use gitlab."
+  :type '(choice (const :tag "Github" nil)
+                 (const :tag "Gitlab" 'gitlab))
+  :group 'pr-review)
+
 (defvar pr-review--bin-dir (file-name-directory (or load-file-name buffer-file-name)))
 
 (defun pr-review--get-graphql (name)
   "Get graphql content for NAME (symbol), cached."
   (with-temp-buffer
     (insert-file-contents-literally
-     (concat pr-review--bin-dir "graphql/" (symbol-name name) ".graphql"))
+     (concat pr-review--bin-dir
+             "graphql/"
+             (when (eq pr-review-ghub-forge 'gitlab) "gitlab/")
+             (symbol-name name) ".graphql"))
     (buffer-substring-no-properties (point-min) (point-max))))
 
 (defun pr-review--ghub-common-request-args ()
   "Return common args for `ghub-request' and `ghub-graphql'."
   (list :auth pr-review-ghub-auth-name
         :username pr-review-ghub-username
-        :host pr-review-ghub-host))
+        :host pr-review-ghub-host
+        :forge pr-review-ghub-forge))
 
 (defun pr-review--execute-graphql-raw (query variables)
   "Execute graphql QUERY with VARIABLES, return result."
@@ -82,7 +93,7 @@
   "Execute graphql from file NAME.graphql with VARIABLES, return result."
   (pr-review--execute-graphql-raw (pr-review--get-graphql name) variables))
 
-(defun pr-review--fetch-pr-info ()
+(cl-defmethod pr-review--fetch-pr-info ()
   "Fetch pr info based on current buffer's local variable."
   (pcase-let ((`(,repo-owner ,repo-name ,pr-id) pr-review--pr-path))
     (let-alist (pr-review--execute-graphql
@@ -94,7 +105,7 @@
                               (string-to-number pr-id)))))
       .repository.pullRequest)))
 
-(defun pr-review--fetch-compare (base-ref head-ref)
+(cl-defmethod pr-review--fetch-compare (base-ref head-ref)
   "Fetch git diff from BASE-REF to HEAD-REF for current buffer.
 Also fix the result so that it looks like result of git diff --no-prefix."
   (when-let* ((repo-owner (car pr-review--pr-path))
@@ -120,17 +131,26 @@ Also fix the result so that it looks like result of git diff --no-prefix."
                res))
     res))
 
-(defvar-local pr-review--compare-cache-refs nil)
-(defvar-local pr-review--compare-cache-result nil)
+(defvar-local pr-review--compare-cache-table nil)
 (defun pr-review--fetch-compare-cached (base-ref head-ref)
   "Fetch git diff from BASE-REF to HEAD-REF.
 Same as `pr-review--fetch-compare', but cached in buffer variable."
-  (unless (and pr-review--compare-cache-result
-               (equal pr-review--compare-cache-refs (cons base-ref head-ref)))
-    (when-let ((res (pr-review--fetch-compare base-ref head-ref)))
-      (setq-local pr-review--compare-cache-result res
-                  pr-review--compare-cache-refs (cons base-ref head-ref))))
-  pr-review--compare-cache-result)
+  (unless pr-review--compare-cache-table
+    (setq-local pr-review--compare-cache-table (make-hash-table :test 'equal)))
+  (let ((key (cons base-ref head-ref)))
+    (or (gethash key pr-review--compare-cache-table)
+        (let ((val (pr-review--fetch-compare base-ref head-ref)))
+          (puthash key val pr-review--compare-cache-table)
+          val))))
+
+
+(cl-defmethod pr-review--current-commit-base ()
+  (let-alist pr-review--pr-info
+    (or pr-review--selected-commit-base .baseRefOid)))
+
+(cl-defmethod pr-review--current-commit-head ()
+  (let-alist pr-review--pr-info
+    (or pr-review--selected-commit-head .headRefOid)))
 
 
 (defun pr-review--fetch-file (filepath head-or-base)
@@ -141,8 +161,8 @@ HEAD-OR-BASE should be \='head or \='base, it determines the version to fetch."
          (url (format "/repos/%s/%s/contents/%s" repo-owner repo-name filepath))
          (ref (let-alist pr-review--pr-info
                 (pcase head-or-base
-                  ('head (or pr-review--selected-commit-head .headRefOid))
-                  ('base (or pr-review--selected-commit-base .baseRefOid))))))
+                  ('head (pr-review--current-commit-head))
+                  ('base (pr-review--current-commit-base))))))
     (apply #'ghub-request
            "GET" url `((ref . ,ref))
            :headers '(("Accept" . "application/vnd.github.v3.raw"))

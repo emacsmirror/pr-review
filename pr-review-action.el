@@ -596,10 +596,11 @@ Return t if found, nil otherwise."
       (user-error "Invalid commit abbrev-oids"))
     (setq indices (sort (seq-uniq indices)))
 
-    (if (null indices)
-        (setq pr-review--selected-commits nil
-              pr-review--selected-commit-base nil
-              pr-review--selected-commit-head nil)
+    (setq pr-review--selected-commits nil
+          pr-review--selected-commit-base nil
+          pr-review--selected-commit-head nil)
+    ;; if (null indices), keep above vars nil
+    (when indices
       (unless (length< indices 3)
         (user-error "Must input 1 commit (to select only the commit) or 2 commits (to select a commit range)"))
       (setq pr-review--selected-commits
@@ -609,7 +610,7 @@ Return t if found, nil otherwise."
             (car (last pr-review--selected-commits))
             pr-review--selected-commit-base
             (if (= (car indices) 0)
-                (let-alist pr-review--pr-info .baseRefOid)
+                (pr-review--current-commit-base)
               (let-alist (nth (- (car indices) 1) commit-nodes)
                 .commit.oid)))))
   (pr-review-refresh))

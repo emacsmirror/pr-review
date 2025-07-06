@@ -62,7 +62,7 @@
                 (cond
                  ((member trimmed-str '("MERGED" "SUCCESS" "COMPLETED" "APPROVED" "REJECTED"))
                   'pr-review-success-state-face)
-                 ((member trimmed-str '("FAILURE" "TIMED_OUT" "ERROR" "CHANGES_REQUESTED" "CLOSED" "CONFLICTING" "UNKNOWN"))
+                 ((member trimmed-str '("FAILURE" "TIMED_OUT" "ERROR" "CHANGES_REQUESTED" "CLOSED" "CONFLICTING" "UNKNOWN" "NOT_MERGEABLE"))
                   'pr-review-error-state-face)
                  ((member trimmed-str '("RESOLVED" "OUTDATED" "WARNING"))
                   'pr-review-info-state-face)
@@ -228,14 +228,16 @@ MARGIN count of spaces are added at the start of every line."
     (when extra-face
       (add-face-text-property start end extra-face))))
 
-(defun pr-review--insert-diff (diff)
+(defun pr-review--insert-diff (diff &optional no-fontify)
   "Insert pull request diff DIFF, wash it using magit."
   (let ((beg (point)))
     (setq-local pr-review--diff-begin-point beg)
 
     (if (not diff)
         (insert (propertize "Diff not available\n" 'face 'pr-review-error-state-face))
-      (pr-review--insert-fontified diff 'diff-mode)
+      (if no-fontify
+          (insert diff)
+        (pr-review--insert-fontified diff 'diff-mode))
       (goto-char beg)
       (magit-wash-sequence (apply-partially #'magit-diff-wash-diff '())))
 
@@ -651,19 +653,20 @@ It will be inserted at the beginning."
                      'action (lambda (_) (call-interactively #'pr-review-update-subscription))))))
 
 (defun pr-review--insert-commit-section (commits)
-  "Insert commit section for a list of COMMITS."
+  "Insert commit section for COMMITS.
+COMMITS is a list of (abbrev-sha full-sha title)"
   (magit-insert-section (pr-review--commit-section 'commit-section-id 'hide)
     (magit-insert-heading (format "Total %d commits" (length commits)))
     (dolist (commit commits)
-      (let-alist commit
+      (pcase-let ((`(,abbrev-sha ,full-sha ,title) commit))
         (insert (if (or (null pr-review--selected-commits)
-                        (member .commit.oid pr-review--selected-commits))
+                        (member full-sha pr-review--selected-commits))
                     "* "
                   "- "))
-        (insert-button .commit.abbreviatedOid
+        (insert-button abbrev-sha
                        'face '(pr-review-hash-face pr-review-link-face)
-                       'action (lambda (_) (pr-review-select-commit .commit.abbreviatedOid)))
-        (insert " " .commit.messageHeadline "\n")))))
+                       'action (lambda (_) (pr-review-select-commit abbrev-sha)))
+        (insert " " title "\n")))))
 
 (defun pr-review--insert-check-section (status-check-rollup required-contexts)
   "Insert check section for STATUS-CHECK-ROLLUP and REQUIRED-CONTEXTS."
@@ -886,7 +889,9 @@ it can be displayed in a single line."
         (insert "\n")))
     (let-alist pr
       (when .commits.nodes
-        (pr-review--insert-commit-section .commits.nodes)
+        (pr-review--insert-commit-section
+         (mapcar (lambda (n) (let-alist n (list .commit.abbreviatedOid .commit.oid .commit.messageHeadline)))
+                 .commits.nodes))
         (insert "\n")))
     (magit-insert-section (pr-review--diff-section)
       (magit-insert-heading
@@ -908,19 +913,16 @@ it can be displayed in a single line."
         (mapc 'pr-review--insert-in-diff-checkrun-annotation
               (let-alist context .annotations.nodes))))))
 
-(defun pr-review--insert-pr (pr diff)
+(cl-defmethod pr-review--insert-pr (pr diff)
   "Insert pr buffer with PR and DIFF."
-  (setq pr-review--char-pixel-width (shr-string-pixel-width "-"))
   (magit-insert-section section (pr-review--root-section)
     (let-alist pr
       (oset section title .title)
       (oset section updatable .viewerCanUpdate)
       (magit-insert-heading
-        (propertize (alist-get 'title pr)'face 'pr-review-title-face)))
+        (propertize (alist-get 'title pr) 'face 'pr-review-title-face)))
     (insert "\n")
-    (pr-review--insert-pr-body pr diff))
-  ;; need to call after this inserting all sections
-  (pr-review--hide-generated-files))
+    (pr-review--insert-pr-body pr diff)))
 
 
 (provide 'pr-review-render)

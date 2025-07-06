@@ -146,18 +146,20 @@ Which means that all sections are collapsed."
 (defun pr-review--refresh-internal ()
   "Fetch and reload current PrReview buffer."
   (let* ((pr-info (pr-review--fetch-pr-info))
-         (pr-diff (let-alist pr-info
-                    (pr-review--fetch-compare-cached
-                     (or pr-review--selected-commit-base .baseRefOid)
-                     (or pr-review--selected-commit-head .headRefOid))))
-         section-id)
+         pr-diff section-id)
     (setq-local pr-review--pr-info pr-info
-                mark-ring nil)
+                mark-ring nil
+                pr-review--char-pixel-width (shr-string-pixel-width "-"))
+    (setq pr-diff (pr-review--fetch-compare-cached
+                   (pr-review--current-commit-base)
+                   (pr-review--current-commit-head)))
     (when-let ((section (magit-current-section)))
       (setq section-id (oref section value)))
     (let ((inhibit-read-only t))
       (erase-buffer)
       (pr-review--insert-pr pr-info pr-diff)
+      ;; need to call after this inserting all sections
+      (pr-review--hide-generated-files)
       (mapc (lambda (th) (pr-review--insert-in-diff-pending-review-thread
                           th 'allow-fallback))
             pr-review--pending-review-threads))
@@ -183,9 +185,11 @@ otherwise, ask interactively."
   (when-let* ((url-parsed (url-generic-parse-url url))
               (path (url-filename url-parsed)))
     (when (and (member (url-type url-parsed) '("http" "https"))
-               (string-match (rx "/" (group (+ (any alphanumeric ?- ?_ ?.)))
+               (string-match (rx "/" (group (+ (any alphanumeric ?- ?_ ?. ?/)))
                                  "/" (group (+ (any alphanumeric ?- ?_ ?.)))
-                                 "/pull" (? "s") "/" (group (+ (any digit))))
+                                 (or (: "/pull" (? "s"))
+                                     "/-/merge_requests")  ;; gitlab
+                                 "/" (group (+ (any digit))))
                              (url-filename url-parsed)))
       (list (match-string 1 path)
             (match-string 2 path)
