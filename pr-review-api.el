@@ -32,6 +32,19 @@
   :type 'symbol
   :group 'pr-review)
 
+(defcustom pr-review-forges-alist
+  "TODO"
+  '(("github.com" . (github nil nil))
+    ("gitlab.com" . (gitlab nil nil)))
+  :group 'pr-review
+  :type '(alist :key-type string
+                :value-type (list (choice (const :tag "Github" github)
+                                          (const :tag "Gitlab (not supported yet)" gitlab))
+                                  (choice (const :tag "Read API host domain from ghub config" nil)
+                                          (string :tag "API host domain"))
+                                  (choice (const :tag "Read username from ghub config" nil)
+                                          (string :tag "Username")))))
+
 (defcustom pr-review-ghub-username nil
   "Ghub username used by `pr-review', see `ghub-request' for details."
   :type '(choice (const :tag "Read from config" nil)
@@ -44,14 +57,21 @@
                  (string :tag "Host value"))
   :group 'pr-review)
 
-(defcustom pr-review-ghub-forge nil
-  "Ghub forge used by `pr-review', see `ghub-request' for details.
-By default (nil), github API is used; also possible to use gitlab."
-  :type '(choice (const :tag "Github" nil)
-                 (const :tag "Gitlab" 'gitlab))
-  :group 'pr-review)
+(make-obsolete-variable 'pr-review-ghub-username 'pr-review-forges-alist "20250706")
+(make-obsolete-variable 'pr-review-ghub-host 'pr-review-forges-alist "20250706")
+
+(defvar-local pr-review--current-host nil
+  "Current's pr-review buffer's remote host.")
 
 (defvar pr-review--bin-dir (file-name-directory (or load-file-name buffer-file-name)))
+
+(defun pr-review--ghub-common-request-args ()
+  "Return common args for `ghub-request' and `ghub-graphql'."
+  (let ((forge-info (cdr (alist-get pr-review--current-host pr-review-forges-alist nil nil 'equal))))
+    (list :auth pr-review-ghub-auth-name
+          :username (or (nth 2 forge-info) pr-review-ghub-username)
+          :host (or (nth 1 forge-info) pr-review-ghub-host)
+          :forge (nth 0 forge-info))))
 
 (defun pr-review--get-graphql (name)
   "Get graphql content for NAME (symbol), cached."
@@ -59,16 +79,9 @@ By default (nil), github API is used; also possible to use gitlab."
     (insert-file-contents-literally
      (concat pr-review--bin-dir
              "graphql/"
-             (when (eq pr-review-ghub-forge 'gitlab) "gitlab/")
+             (when (eq (plist-get (pr-review--ghub-common-request-args) :forge) 'gitlab) "gitlab/")
              (symbol-name name) ".graphql"))
     (buffer-substring-no-properties (point-min) (point-max))))
-
-(defun pr-review--ghub-common-request-args ()
-  "Return common args for `ghub-request' and `ghub-graphql'."
-  (list :auth pr-review-ghub-auth-name
-        :username pr-review-ghub-username
-        :host pr-review-ghub-host
-        :forge pr-review-ghub-forge))
 
 (defun pr-review--execute-graphql-raw (query variables)
   "Execute graphql QUERY with VARIABLES, return result."
@@ -334,11 +347,11 @@ See `pr-review--get-assignable-users-1' for return format."
 
 (defun pr-review--whoami-cached ()
   "Return current user info, cached."
-  (if (equal (car pr-review--whoami-cache) (cons pr-review-ghub-host pr-review-ghub-username))
+  (if (equal (car pr-review--whoami-cache) (pr-review--ghub-common-request-args))
       (cdr pr-review--whoami-cache)
     (let ((res (pr-review--whoami)))
       (setq pr-review--whoami-cache
-            (cons (cons pr-review-ghub-host pr-review-ghub-username)
+            (cons (pr-review--ghub-common-request-args)
                   res))
       res)))
 
