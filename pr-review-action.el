@@ -359,7 +359,9 @@ When invoked with prefix, prompt for head-or-base and filepath."
        (setq filepath (read-from-minibuffer "File path: " filepath)))
      (list head-or-base filepath line)))
   (when (and head-or-base filepath)
-    (let* ((content (pr-review--fetch-file filepath head-or-base))
+    (let* ((content (pr-review--fetch-file filepath (pcase head-or-base
+                                                      ('head (pr-review--current-commit-head))
+                                                      ('base (pr-review--current-commit-base)))))
            (tempfile (pr-review--make-temp-file head-or-base filepath content)))
       (with-current-buffer (find-file-other-window tempfile)
         (goto-char (point-min))
@@ -377,8 +379,8 @@ When invoked with prefix, prompt for filepath."
      (when (or current-prefix-arg (null filepath))
        (setq filepath (completing-read "File:" (pr-review--find-all-file-names) nil 'require-match)))
      (list filepath)))
-  (let* ((base-content (pr-review--fetch-file filepath 'base))
-         (head-content (pr-review--fetch-file filepath 'head)))
+  (let* ((base-content (pr-review--fetch-file filepath (pr-review--current-commit-base)))
+         (head-content (pr-review--fetch-file filepath (pr-review--current-commit-head))))
     (ediff-files (pr-review--make-temp-file 'base filepath base-content)
                  (pr-review--make-temp-file 'head filepath head-content))))
 

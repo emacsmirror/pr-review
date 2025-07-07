@@ -163,18 +163,13 @@ Same as `pr-review--fetch-compare', but cached in buffer variable."
     (or pr-review--selected-commit-head .headRefOid)))
 
 
-(defun pr-review--fetch-file (filepath head-or-base)
-  "Fetch file content for FILEPATH for current review buffer.
-HEAD-OR-BASE should be \='head or \='base, it determines the version to fetch."
+(cl-defmethod pr-review--fetch-file (filepath commit)
+  "Fetch file content for FILEPATH at COMMIT."
   (let* ((repo-owner (car pr-review--pr-path))
          (repo-name (cadr pr-review--pr-path))
-         (url (format "/repos/%s/%s/contents/%s" repo-owner repo-name filepath))
-         (ref (let-alist pr-review--pr-info
-                (pcase head-or-base
-                  ('head (pr-review--current-commit-head))
-                  ('base (pr-review--current-commit-base))))))
+         (url (format "/repos/%s/%s/contents/%s" repo-owner repo-name filepath)))
     (apply #'ghub-request
-           "GET" url `((ref . ,ref))
+           "GET" url `((ref . ,commit))
            :headers '(("Accept" . "application/vnd.github.v3.raw"))
            :reader 'ghub--decode-payload
            (pr-review--ghub-common-request-args))))

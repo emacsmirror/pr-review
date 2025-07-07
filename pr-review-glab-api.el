@@ -75,6 +75,18 @@
                res))
     res))
 
+(pr-review-defmethod-gitlab pr-review--fetch-file (filepath commit)
+                            (when-let* ((repo-owner (car pr-review--pr-path))
+                                        (repo-name (cadr pr-review--pr-path)))
+                              (apply #'ghub-request
+                                     "GET"
+                                     (format "/projects/%s/repository/files/%s/raw"
+                                             (string-replace "/" "%2F" (concat repo-owner "/" repo-name))
+                                             (string-replace "/" "%2F" filepath))
+                                     `((ref . ,commit))
+                                     :reader 'ghub--decode-payload
+                                     (pr-review--ghub-common-request-args))))
+
 
 (provide 'pr-review-glab-api)
 ;;; pr-review-glab-api.el ends here
