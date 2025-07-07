@@ -62,7 +62,7 @@
                 (cond
                  ((member trimmed-str '("MERGED" "SUCCESS" "COMPLETED" "APPROVED" "REJECTED"))
                   'pr-review-success-state-face)
-                 ((member trimmed-str '("FAILURE" "TIMED_OUT" "ERROR" "CHANGES_REQUESTED" "CLOSED" "CONFLICTING" "UNKNOWN" "NOT_MERGEABLE"))
+                 ((member trimmed-str '("FAILURE" "TIMED_OUT" "ERROR" "CHANGES_REQUESTED" "CLOSED" "CONFLICTING" "UNKNOWN" "NOT_MERGEABLE" "FAILED"))
                   'pr-review-error-state-face)
                  ((member trimmed-str '("RESOLVED" "OUTDATED" "WARNING"))
                   'pr-review-info-state-face)

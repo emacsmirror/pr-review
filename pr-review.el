@@ -160,7 +160,7 @@ Which means that all sections are collapsed."
       (pr-review--insert-pr pr-info pr-diff)
       ;; need to call after this inserting all sections
       (pr-review--hide-generated-files)
-      (magit-map-sections #'magit-section-maybe-update-visibility-indicator)
+      (magit-section-show magit-root-section)  ;; this is required to apply all hidden state and show fringes
       (mapc (lambda (th) (pr-review--insert-in-diff-pending-review-thread
                           th 'allow-fallback))
             pr-review--pending-review-threads))

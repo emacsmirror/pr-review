@@ -40,15 +40,34 @@
     ;; TODO: edit labels
     ))
 
+(defun pr-review--glab-insert-mergeability-info (pr-info)
+  (let-alist pr-info
+    (insert (pr-review--propertize-keyword "MERGEABILITY") ": ")
+    (cl-loop for check in .mergeabilityChecks
+             if (equal (alist-get 'status check) "FAILED")
+             collect (propertize (alist-get 'identifier check) 'face 'pr-review-error-state-face)
+             into result
+             finally (if result
+                         (insert (string-join result ", "))
+                       (insert (pr-review--propertize-keyword "SUCCESS"))))
+    (when .autoMergeEnabled
+      (insert
+       " - "
+       (pr-review--propertize-keyword "AUTO MERGE " .autoMergeStrategy)))
+    (insert "\n")))
+
 (defun pr-review--glab-insert-reviewers-info (pr-info)
   (let ((groups (make-hash-table :test 'equal)))
-    (setf (gethash "UNREVIEWED" groups) nil)  ;; always have this group
     (let-alist pr-info
       (when .reviewers.nodes
         (dolist (n .reviewers.nodes)
           (let-alist n
             (push .name (gethash .mergeRequestInteraction.reviewState groups)))))
+      (when .approvedBy.nodes
+        (dolist (n .approvedBy.nodes)
+          (push (alist-get 'name n) (gethash "APPROVED" groups))))
       (maphash (lambda (status users)
+                 (delete-dups users)
                  (insert (pr-review--propertize-keyword status)
                          ": "
                          (mapconcat #'pr-review--propertize-username users ", "))
@@ -60,15 +79,7 @@
                  ;;    'face 'pr-review-button-face
                  ;;    'action (lambda (_) (call-interactively #'pr-review-request-reviews))))
                  (insert "\n"))
-               groups)
-      (insert (concat (pr-review--propertize-keyword "APPROVED") ": "
-                      (mapconcat (lambda (n) (pr-review--propertize-username (alist-get 'name n)))
-                                 .approvedBy.nodes ", ")
-                      (when .approved
-                        (propertize " [ok]" 'face 'pr-review-success-state-face))
-                      "\n"))
-      )
-    ))
+               groups))))
 
 (defun pr-review--glab-insert-assignees-info (pr-info)
   (let-alist pr-info
@@ -153,11 +164,7 @@
     (pr-review--glab-insert-labels-info pr)
     (insert "\n")
     ;; TODO approvalState?
-    ;; TODO autoMerge?
     (insert (pr-review--propertize-keyword (upcase .state))
-            (if (equal .state "opened")
-                (concat " - " (pr-review--propertize-keyword (if .mergeable "MERGEABLE" "NOT_MERGEABLE")))
-              "")
             " - "
             (propertize (concat "@" .author.name) 'face 'pr-review-author-face)
             " - "
@@ -165,8 +172,10 @@
             (if .subscribed
                 ;; TODO subscribe action
                 (concat " - " (pr-review--propertize-keyword "SUBSCRIBED"))
-              ""))
-    (insert "\n\n")
+              "")
+            "\n")
+    (pr-review--glab-insert-mergeability-info pr)
+    (insert "\n")
     (pr-review--glab-insert-reviewers-info pr)
     (pr-review--glab-insert-assignees-info pr)
     (insert "\n")
@@ -191,7 +200,6 @@
               (pr-review--glab-insert-discussion discussion)))))
       )
 
-    ;; TODO ci states
     (when .commits.nodes
       (pr-review--insert-commit-section
        (mapcar (lambda (n) (let-alist n (list .shortId .sha .title)))
