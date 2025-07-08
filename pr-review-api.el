@@ -218,13 +218,13 @@ Same as `pr-review--fetch-compare', but cached in buffer variable."
                               `((input . ((pullRequestReviewCommentId . ,review-comment-id)
                                           (body . ,body))))))
 
-(defun pr-review--update-pr-body (pr-node-id body)
+(cl-defmethod pr-review--update-pr-body (pr-node-id body)
   "Update pr description to BODY for PR-NODE-ID."
   (pr-review--execute-graphql 'update-pr
                               `((input . ((pullRequestId . ,pr-node-id)
                                           (body . ,body))))))
 
-(defun pr-review--update-pr-title (pr-node-id title)
+(cl-defmethod pr-review--update-pr-title (pr-node-id title)
   "Update pr title to TITLE for PR-NODE-ID."
   (pr-review--execute-graphql 'update-pr
                               `((input . ((pullRequestId . ,pr-node-id)

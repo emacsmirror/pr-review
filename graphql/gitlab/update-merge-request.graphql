@@ -1,0 +1,6 @@
+mutation($input: MergeRequestUpdateInput!) {
+  mergeRequestUpdate(input: $input) {
+    errors
+    clientMutationId
+  }
+}

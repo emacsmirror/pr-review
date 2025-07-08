@@ -24,6 +24,8 @@
 
 ;;; Code:
 
+(require 'pr-review-render)
+
 (defun pr-review--glab-insert-labels-info (pr-info)
   (let-alist pr-info
     (when .labels.nodes
@@ -115,7 +117,6 @@
     (magit-insert-section section (pr-review--review-thread-section
                                     (alist-get 'id discussion)  ;; not discussion's id. for editing
                                     resolved)
-        ;; TODO: top-comment-id, updatable, body, id
         (oset section is-resolved resolved)
         (oset section reply-id (alist-get 'replyId discussion))
         (let-alist first-note
@@ -196,8 +197,8 @@
     (insert "\n")
     (magit-insert-section section (pr-review--description-section .id)
                           (oset section body .description)
+                          (oset section updatable .userPermissions.updateMergeRequest)
                           ;; TODO
-                          ;; (oset section updatable .viewerCanUpdate)
                           ;; (oset section reaction-groups .reactionGroups)
                           (magit-insert-heading "Description")
                           (pr-review--insert-html .descriptionHtml)
@@ -241,8 +242,7 @@
   (magit-insert-section section (pr-review--root-section)
     (let-alist pr
       (oset section title .title)
-      ;; TODO
-      ;; (oset section updatable .viewerCanUpdate)
+      (oset section updatable .userPermissions.updateMergeRequest)
       (magit-insert-heading
         (propertize (alist-get 'title pr) 'face 'pr-review-title-face)))
     (insert "\n")

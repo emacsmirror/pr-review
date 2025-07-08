@@ -32,6 +32,10 @@
 (require 'pr-review-input)
 (require 'pr-review-render)
 (require 'pr-review-action)
+
+(require 'pr-review-glab-api)
+(require 'pr-review-glab-render)
+
 (require 'tabulated-list)
 
 (defun pr-review--confirm-kill-buffer ()

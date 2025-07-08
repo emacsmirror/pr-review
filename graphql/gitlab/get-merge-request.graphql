@@ -9,6 +9,7 @@ query($repo_path:ID!, $iid:String!) {
       detailedMergeStatus
       mergeabilityChecks { identifier status }
       subscribed
+      userPermissions { updateMergeRequest }
 
       commits(first: 100) {
         nodes {

@@ -26,6 +26,10 @@
 
 (require 'pr-review-api)
 
+(defun pr-review--glab-project-path ()
+  "Return gitlab project path for current buffer."
+  (concat (car pr-review--pr-path) "/" (cadr pr-review--pr-path)))
+
 (pr-review-defmethod-gitlab pr-review--fetch-pr-info ()
   (pcase-let ((`(,repo-owner ,repo-name ,pr-id) pr-review--pr-path))
     (let-alist (pr-review--execute-graphql
@@ -43,12 +47,10 @@
     (or pr-review--selected-commit-head .diffRefs.headSha)))
 
 (pr-review-defmethod-gitlab pr-review--fetch-compare (base-ref head-ref)
-  (when-let* ((repo-owner (car pr-review--pr-path))
-              (repo-name (cadr pr-review--pr-path))
-              (resp (apply #'ghub-request
+  (when-let* ((resp (apply #'ghub-request
                            "GET"
                            (format "/projects/%s/repository/compare"
-                                   (url-hexify-string (concat repo-owner "/" repo-name)))
+                                   (url-hexify-string (pr-review--glab-project-path)))
                            `((from . ,base-ref)
                              (to . ,head-ref)
                              (unidiff . "true"))
@@ -79,7 +81,7 @@
   (apply #'ghub-request
          "GET"
          (format "/projects/%s/repository/files/%s/raw"
-                 (url-hexify-string (concat (car pr-review--pr-path) "/" (cadr pr-review--pr-path)))
+                 (url-hexify-string (pr-review--glab-project-path))
                  (url-hexify-string filepath))
          `((ref . ,commit))
          :reader 'ghub--decode-payload
@@ -107,6 +109,17 @@
                               `((input . ((id . ,discussion-id)
                                           (resolve . ,resolve-or-unresolve))))))
 
+(pr-review-defmethod-gitlab pr-review--update-pr-body (_ body)
+  (pr-review--execute-graphql 'update-merge-request
+                              `((input . ((iid . ,(format "%s" (nth 2 pr-review--pr-path)))
+                                          (projectPath . ,(pr-review--glab-project-path))
+                                          (description . ,body))))))
+
+(pr-review-defmethod-gitlab pr-review--update-pr-title (_ title)
+  (pr-review--execute-graphql 'update-merge-request
+                              `((input . ((iid . ,(format "%s" (nth 2 pr-review--pr-path)))
+                                          (projectPath . ,(pr-review--glab-project-path))
+                                          (title . ,title))))))
 
 (provide 'pr-review-glab-api)
 ;;; pr-review-glab-api.el ends here
