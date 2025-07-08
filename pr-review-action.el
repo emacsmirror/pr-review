@@ -393,7 +393,8 @@ When invoked with prefix, prompt for filepath."
 (defun pr-review-open-in-default-browser ()
   "Open current PR in default browser."
   (interactive)
-  (browse-url-default-browser (alist-get 'url pr-review--pr-info)))
+  (browse-url-default-browser (or (alist-get 'url pr-review--pr-info)
+                                  (alist-get 'webUrl pr-review--pr-info))))
 
 ;; general dispatching functions, call other functions based on current context
 
