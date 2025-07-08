@@ -389,7 +389,7 @@ It will be inserted at the beginning."
   (magit-insert-section section (pr-review--review-thread-section
                                  (alist-get 'id review-thread)
                                  (eq t (alist-get 'isCollapsed review-thread)))
-    (oset section top-comment-id (alist-get 'id top-comment))
+    (oset section reply-id (alist-get 'id top-comment))
     (oset section is-resolved (eq t (alist-get 'isResolved review-thread)))
     (let-alist review-thread
       (magit-insert-heading

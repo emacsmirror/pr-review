@@ -163,7 +163,10 @@
 (defclass pr-review--commit-section (magit-section) ())
 
 (defclass pr-review--review-thread-section (magit-section)
-  ((top-comment-id :initform nil)
+  ;; for github, it has no body, reply-id is the id of first comment
+  ;; for gitlab, first note is the body.
+  ((body :initform nil)
+   (reply-id :initform nil)
    (is-resolved :initform nil)))
 
 (defclass pr-review--review-thread-item-section (magit-section)

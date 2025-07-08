@@ -117,9 +117,9 @@
                                     resolved)
         ;; TODO: top-comment-id, updatable, body, id
         (oset section is-resolved resolved)
-        (oset section top-comment-id (alist-get 'replyId discussion))
+        (oset section reply-id (alist-get 'replyId discussion))
         (let-alist first-note
-          ;; (oset section body .body)
+          (oset section body .body)
           (when .position.filePath
             (setq goto-diff-line-args (if .position.newLine
                                           (list .position.filePath "RIGHT" .position.newLine)

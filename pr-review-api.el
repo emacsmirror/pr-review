@@ -174,13 +174,13 @@ Same as `pr-review--fetch-compare', but cached in buffer variable."
            :reader 'ghub--decode-payload
            (pr-review--ghub-common-request-args))))
 
-(cl-defmethod pr-review--post-thread-reply (pr-node-id top-comment-id body)
-  "Post review commit reply BODY to TOP-COMMENT-ID at PR-NODE-ID."
+(cl-defmethod pr-review--post-thread-reply (pr-node-id reply-id body)
+  "Post review commit reply BODY to REPLY-ID at PR-NODE-ID."
   (let (res review-id)
     (setq res (let-alist (pr-review--execute-graphql
                           'add-review-comment-reply
                           `((input . ((pullRequestId . ,pr-node-id)
-                                      (inReplyTo . ,top-comment-id)
+                                      (inReplyTo . ,reply-id)
                                       (body . ,body)))))
                 .addPullRequestReviewComment.comment))
     (unless (equal 1 (let-alist res (length .pullRequestReview.comments.nodes)))

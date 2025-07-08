@@ -57,12 +57,14 @@
       (setq reply-content (oref section body)
             section (oref section parent)))
     (when (pr-review--review-thread-section-p section)
+      (unless reply-content
+        (setq reply-content (oref section body)))
       (pr-review--open-input-buffer
        "Reply to thread."
        (apply-partially #'pr-review--insert-quoted-content reply-content)
        (apply-partially #'pr-review--post-thread-reply
                         (alist-get 'id pr-review--pr-info)
-                        (oref section top-comment-id))
+                        (oref section reply-id))
        'refresh-after-exit))))
 
 (declare-function pr-review-refresh "pr-review")
