@@ -225,6 +225,7 @@ See https://docs.github.com/en/graphql/reference/enums#reactioncontent")
   "Define a method for GitLab forge context.
 NAME is the method name, ARGS are the arguments (without context),
 and BODY is the method body."
+  (declare (indent 2))
   `(cl-defmethod ,name (,@args &context (pr-review--forge (eql 'gitlab)))
      ,@body))
 
