@@ -230,7 +230,7 @@ Same as `pr-review--fetch-compare', but cached in buffer variable."
                               `((input . ((pullRequestId . ,pr-node-id)
                                           (title . ,title))))))
 
-(defun pr-review--post-resolve-review-thread (review-thread-id resolve-or-unresolve)
+(cl-defmethod pr-review--post-resolve-review-thread (review-thread-id resolve-or-unresolve)
   "Resolve or unresolve review thread REVIEW-THREAD-ID.
 If RESOLVE-OR-UNRESOLVE is non-nil, do resolve; otherwise do unresolve."
   (pr-review--execute-graphql (if resolve-or-unresolve

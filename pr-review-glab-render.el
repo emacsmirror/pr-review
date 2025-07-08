@@ -113,7 +113,7 @@
          goto-diff-line-args)
     ;; use review-thread-section so that pr-review-reply-to-thread works
     (magit-insert-section section (pr-review--review-thread-section
-                                    (alist-get 'id first-note)  ;; not discussion's id. for editing
+                                    (alist-get 'id discussion)  ;; not discussion's id. for editing
                                     resolved)
         ;; TODO: top-comment-id, updatable, body, id
         (oset section is-resolved resolved)
@@ -121,6 +121,7 @@
         (let-alist first-note
           (oset section body .body)
           (oset section updatable .userPermissions.adminNote)
+          (oset section update-id .id)
           (when .position.filePath
             (setq goto-diff-line-args (if .position.newLine
                                           (list .position.filePath "RIGHT" .position.newLine)
@@ -155,8 +156,18 @@
               (pr-review--insert-html .bodyHtml pr-review-section-indent-width
                                       'pr-review-thread-comment-face))
             ))
-        ;; TODO: reply btn
-        )
+
+        (when (cdr notes)
+          (insert "\n")
+          (insert (make-string pr-review-section-indent-width ?\s))
+          (insert-button "Reply to thread"
+                         'face 'pr-review-button-face
+                         'action 'pr-review-reply-to-thread)
+          (insert "  ")
+          (insert-button (if resolved "Unresolve" "Resolve")
+                         'face 'pr-review-button-face
+                         'action 'pr-review-resolve-thread)
+          (insert "\n")))
     (insert "\n")))
 
 (defun pr-review--glab-insert-pr-body (pr diff)

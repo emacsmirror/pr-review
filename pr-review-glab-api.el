@@ -102,6 +102,11 @@
                               `((input . ((id . ,note-id)
                                           (body . ,body))))))
 
+(pr-review-defmethod-gitlab pr-review--post-resolve-review-thread (discussion-id resolve-or-unresolve)
+  (pr-review--execute-graphql 'discussion-toggle-resolve
+                              `((input . ((id . ,discussion-id)
+                                          (resolve . ,resolve-or-unresolve))))))
+
 
 (provide 'pr-review-glab-api)
 ;;; pr-review-glab-api.el ends here

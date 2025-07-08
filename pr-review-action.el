@@ -303,11 +303,13 @@ Used for interactive selection one of them."
   "Edit thread comment under current point."
   (interactive)
   (when-let* ((section (magit-current-section))
-              (-is-valid-section (or (pr-review--review-thread-item-section-p section)
-                                     ;; for gitlab
-                                     (pr-review--review-thread-section-p section)))
+              (-is-valid-section (pr-review--review-thread-context-p section))
               (updatable (oref section updatable))
-              (id (oref section value))
+              (id (or
+                   ;; special case: gitlab review-thread-section, use update-id instead of value, because value is the discussion id
+                   (and (pr-review--review-thread-context-p section)
+                        (oref section update-id))
+                   (oref section value)))
               (body (oref section body)))
     (pr-review--open-input-buffer
      "Update review comment."
@@ -447,7 +449,7 @@ edit description, edit review comment, edit comment, edit pending diff review."
      (pr-review-edit-pr-description))
     ;; pr-review--review-thread-section is only for gitlab
     ;; all gitlab "notes" are either review-thread-item or review-thread; no comment-section or review-section
-    ((or (pred pr-review--review-thread-item-section-p) (pred pr-review--review-thread-section-p))
+    ((pred pr-review--review-thread-context-p)
      (pr-review-edit-thread-item))
     ((pred pr-review--comment-section-p)
      (pr-review-edit-comment))

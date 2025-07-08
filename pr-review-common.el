@@ -164,9 +164,10 @@
 
 (defclass pr-review--review-thread-section (magit-section)
   ;; for github, it has no body, reply-id is the id of first comment
-  ;; for gitlab, first note is the body.
+  ;; for gitlab, first note is the body, update-id is used to update it (because the "value" is the id of the discussion)
   ((body :initform nil)
    (updatable :initform nil)
+   (update-id :initform nil)
    (reply-id :initform nil)
    (is-resolved :initform nil)))
 

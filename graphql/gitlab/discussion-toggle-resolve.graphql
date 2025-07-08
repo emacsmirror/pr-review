@@ -1,0 +1,5 @@
+mutation($input: DiscussionToggleResolveInput!) {
+  discussionToggleResolve(input: $input) {
+    clientMutationId
+  }
+}
