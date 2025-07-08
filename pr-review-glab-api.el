@@ -86,5 +86,11 @@
          (pr-review--ghub-common-request-args)))
 
 
+(pr-review-defmethod-gitlab pr-review--post-comment (noteable-id body)
+  (pr-review--execute-graphql 'create-note
+                              `((input . ((noteableId . ,noteable-id)
+                                          (body . ,body))))))
+
+
 (provide 'pr-review-glab-api)
 ;;; pr-review-glab-api.el ends here

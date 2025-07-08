@@ -194,7 +194,7 @@ Same as `pr-review--fetch-compare', but cached in buffer variable."
     (unless (equal review-id (alist-get 'id res))
       (error "Error while submitting review comment reply"))))
 
-(defun pr-review--post-comment (pr-node-id body)
+(cl-defmethod pr-review--post-comment (pr-node-id body)
   "Post comment BODY at pr PR-NODE-ID."
   (pr-review--execute-graphql 'add-comment
                               `((input . ((subjectId . ,pr-node-id)
