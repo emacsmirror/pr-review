@@ -53,7 +53,8 @@
     (when .autoMergeEnabled
       (insert
        " - "
-       (pr-review--propertize-keyword "AUTO MERGE " .autoMergeStrategy)))
+       (pr-review--propertize-keyword (concat "AUTO MERGE: "))
+       (propertize .autoMergeStrategy 'face 'pr-review-info-state-face)))
     (insert "\n")))
 
 (defun pr-review--glab-insert-reviewers-info (pr-info)
