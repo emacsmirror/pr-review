@@ -299,18 +299,20 @@ Used for interactive selection one of them."
      (apply-partially #'pr-review--update-review id)
      'refresh-after-exit)))
 
-(defun pr-review-edit-review-comment ()
-  "Edit review comment under current point."
+(defun pr-review-edit-thread-item ()
+  "Edit thread comment under current point."
   (interactive)
   (when-let* ((section (magit-current-section))
-              (-is-review-thread-item (pr-review--review-thread-item-section-p section))
+              (-is-valid-section (or (pr-review--review-thread-item-section-p section)
+                                     ;; for gitlab
+                                     (pr-review--review-thread-section-p section)))
               (updatable (oref section updatable))
               (id (oref section value))
               (body (oref section body)))
     (pr-review--open-input-buffer
      "Update review comment."
      (lambda () (insert body))
-     (apply-partially #'pr-review--update-review-comment id)
+     (apply-partially #'pr-review--update-thread-item id)
      'refresh-after-exit)))
 
 (defun pr-review-edit-pr-description ()
@@ -443,8 +445,10 @@ edit description, edit review comment, edit comment, edit pending diff review."
   (pcase (magit-current-section)
     ((pred pr-review--description-section-p)
      (pr-review-edit-pr-description))
-    ((pred pr-review--review-thread-item-section-p)
-     (pr-review-edit-review-comment))
+    ;; pr-review--review-thread-section is only for gitlab
+    ;; all gitlab "notes" are either review-thread-item or review-thread; no comment-section or review-section
+    ((or (pred pr-review--review-thread-item-section-p) (pred pr-review--review-thread-section-p))
+     (pr-review-edit-thread-item))
     ((pred pr-review--comment-section-p)
      (pr-review-edit-comment))
     ((pred pr-review--review-section-p)

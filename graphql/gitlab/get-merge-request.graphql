@@ -73,6 +73,7 @@ query($repo_path:ID!, $iid:String!) {
 
               system
               systemNoteMetadata { action }
+              userPermissions { adminNote }
             }
           }
         }

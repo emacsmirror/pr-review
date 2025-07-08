@@ -113,13 +113,14 @@
          goto-diff-line-args)
     ;; use review-thread-section so that pr-review-reply-to-thread works
     (magit-insert-section section (pr-review--review-thread-section
-                                    (alist-get 'id discussion)
+                                    (alist-get 'id first-note)  ;; not discussion's id. for editing
                                     resolved)
         ;; TODO: top-comment-id, updatable, body, id
         (oset section is-resolved resolved)
         (oset section reply-id (alist-get 'replyId discussion))
         (let-alist first-note
           (oset section body .body)
+          (oset section updatable .userPermissions.adminNote)
           (when .position.filePath
             (setq goto-diff-line-args (if .position.newLine
                                           (list .position.filePath "RIGHT" .position.newLine)
@@ -145,7 +146,7 @@
           (let-alist note
             (magit-insert-section note-section (pr-review--review-thread-item-section .id)
               (oset note-section body .body)
-              ;; TODO: set uptabtable etc.
+              (oset note-section updatable .userPermissions.adminNote)
               (magit-insert-heading
                 (make-string pr-review-section-indent-width ?\s)
                 (pr-review--propertize-username .author.name)

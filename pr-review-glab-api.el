@@ -97,6 +97,11 @@
                                           (discussionId . ,reply-id)
                                           (body . ,body))))))
 
+(pr-review-defmethod-gitlab pr-review--update-thread-item (note-id body)
+  (pr-review--execute-graphql 'update-note
+                              `((input . ((id . ,note-id)
+                                          (body . ,body))))))
+
 
 (provide 'pr-review-glab-api)
 ;;; pr-review-glab-api.el ends here

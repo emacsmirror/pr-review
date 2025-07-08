@@ -212,7 +212,7 @@ Same as `pr-review--fetch-compare', but cached in buffer variable."
                               `((input . ((pullRequestReviewId . ,review-id)
                                           (body . ,body))))))
 
-(defun pr-review--update-review-comment (review-comment-id body)
+(cl-defmethod pr-review--update-thread-item (review-comment-id body)
   "Update review comment to BODY for REVIEW-COMMENT-ID."
   (pr-review--execute-graphql 'update-review-comment
                               `((input . ((pullRequestReviewCommentId . ,review-comment-id)

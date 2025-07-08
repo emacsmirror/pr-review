@@ -166,6 +166,7 @@
   ;; for github, it has no body, reply-id is the id of first comment
   ;; for gitlab, first note is the body.
   ((body :initform nil)
+   (updatable :initform nil)
    (reply-id :initform nil)
    (is-resolved :initform nil)))
 
