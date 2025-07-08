@@ -174,7 +174,7 @@ Same as `pr-review--fetch-compare', but cached in buffer variable."
            :reader 'ghub--decode-payload
            (pr-review--ghub-common-request-args))))
 
-(defun pr-review--post-review-comment-reply (pr-node-id top-comment-id body)
+(cl-defmethod pr-review--post-thread-reply (pr-node-id top-comment-id body)
   "Post review commit reply BODY to TOP-COMMENT-ID at PR-NODE-ID."
   (let (res review-id)
     (setq res (let-alist (pr-review--execute-graphql

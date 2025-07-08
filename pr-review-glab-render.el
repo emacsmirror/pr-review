@@ -111,12 +111,15 @@
          (notes (let-alist discussion .notes.nodes))
          (first-note (car notes))
          goto-diff-line-args)
+    ;; use review-thread-section so that pr-review-reply-to-thread works
     (magit-insert-section section (pr-review--review-thread-section
                                     (alist-get 'id discussion)
                                     resolved)
         ;; TODO: top-comment-id, updatable, body, id
         (oset section is-resolved resolved)
+        (oset section top-comment-id (alist-get 'replyId discussion))
         (let-alist first-note
+          ;; (oset section body .body)
           (when .position.filePath
             (setq goto-diff-line-args (if .position.newLine
                                           (list .position.filePath "RIGHT" .position.newLine)
@@ -164,7 +167,6 @@
             (propertize .sourceBranch 'face 'pr-review-branch-face))
     (pr-review--glab-insert-labels-info pr)
     (insert "\n")
-    ;; TODO approvalState?
     (insert (pr-review--propertize-keyword (upcase .state))
             " - "
             (propertize (concat "@" .author.name) 'face 'pr-review-author-face)

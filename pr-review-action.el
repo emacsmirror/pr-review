@@ -60,7 +60,7 @@
       (pr-review--open-input-buffer
        "Reply to thread."
        (apply-partially #'pr-review--insert-quoted-content reply-content)
-       (apply-partially #'pr-review--post-review-comment-reply
+       (apply-partially #'pr-review--post-thread-reply
                         (alist-get 'id pr-review--pr-info)
                         (oref section top-comment-id))
        'refresh-after-exit))))

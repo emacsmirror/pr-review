@@ -91,6 +91,12 @@
                               `((input . ((noteableId . ,noteable-id)
                                           (body . ,body))))))
 
+(pr-review-defmethod-gitlab pr-review--post-thread-reply (noteable-id reply-id body)
+  (pr-review--execute-graphql 'create-note
+                              `((input . ((noteableId . ,noteable-id)
+                                          (discussionId . ,reply-id)
+                                          (body . ,body))))))
+
 
 (provide 'pr-review-glab-api)
 ;;; pr-review-glab-api.el ends here
