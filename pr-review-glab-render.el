@@ -112,10 +112,14 @@
   (let* ((resolved (eq t (alist-get 'resolved discussion)))
          (notes (let-alist discussion .notes.nodes))
          (first-note (car notes))
+         (outdated (let-alist first-note
+                     (and .position.diffRefs.headSha
+                          (not (equal .position.diffRefs.headSha
+                                      (let-alist pr-review--pr-info .diffRefs.headSha))))))
          goto-diff-line-args)
     ;; use review-thread-section so that pr-review-reply-to-thread works
     (magit-insert-section section (pr-review--review-thread-section
-                                    (alist-get 'id discussion)  ;; not discussion's id. for editing
+                                    (alist-get 'id discussion)
                                     resolved)
         (oset section is-resolved resolved)
         (oset section is-resolvable (alist-get 'resolvable discussion))
@@ -143,8 +147,7 @@
             (pr-review--format-timestamp .createdAt)
             (when resolved
               (concat " - " (propertize "RESOLVED" 'face 'pr-review-info-state-face)))
-            (when (and .position.diffRefs.headSha (not (equal .position.diffRefs.headSha
-                                                              (let-alist pr-review--pr-info .diffRefs.headSha))))
+            (when outdated
               (concat " - " (propertize "OUTDATED" 'face 'pr-review-info-state-face))))
           (pr-review--insert-html .bodyHtml))
 
@@ -174,7 +177,23 @@
                          'face 'pr-review-button-face
                          'action 'pr-review-resolve-thread)
           (insert "\n")))
-    (insert "\n")))
+    (insert "\n")
+
+    (when (and goto-diff-line-args (not outdated) (not pr-review--selected-commits))
+      (push (list goto-diff-line-args
+                  ;; title
+                  (concat (format "> %s comments from " (length notes))
+                          (string-join
+                           (seq-uniq
+                            (mapcar (lambda (note) (let-alist note .author.name)) notes))
+                           ", ")
+                          (when resolved " - RESOLVED")
+                          " ")
+                  ;; details
+                  (let-alist first-note .body)
+                  ;; href section id
+                  (alist-get 'id discussion))
+            pr-review--in-diff-review-thread-links))))
 
 
 (defun pr-review--glab-insert-footer-buttons ()
@@ -248,7 +267,7 @@
       (pr-review--insert-diff diff))
     (insert "\n")
     (pr-review--glab-insert-footer-buttons)
-    ;; TODO: in-diff-review thread
+    (pr-review--insert-in-diff-review-thread-links)
     ;; TODO: in-diff checks
     )
   )

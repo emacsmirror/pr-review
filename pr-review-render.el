@@ -35,6 +35,11 @@
 (defvar-local pr-review--char-pixel-width 0)
 (defvar pr-review--last-read-time nil)  ;; dynamically bound. only assigned temporarily. see pr-review-open
 
+(defvar-local pr-review--in-diff-review-thread-links nil
+  "(Only used during rendering) list of in-diff review thread links.
+This can be populated during rendering threads, and will be inserted into diffs at end of rendering.
+Format: list of (goto-diff-line-args  title  details  href-id)")
+
 (defcustom pr-review-section-indent-width 2
   "Indent width for nested sections."
   :type 'integer
@@ -336,37 +341,25 @@ It will be inserted at the beginning."
          beg end
          (list 'pr-review-pending-review-thread pending-review-thread))))))
 
-(defun pr-review--insert-in-diff-review-thread-link (review-thread)
-  "Insert REVIEW-THREAD inside the diff section."
-  (let-alist review-thread
-    ;; when only some commits are selected, in-diff review threads are not displayed.
-    ;; I don't have an easy way to know if certain review threads is for the selected commits.
-    (when (and (not .isOutdated) (null pr-review--selected-commits))
+
+(defun pr-review--insert-in-diff-review-thread-links ()
+  "Insert `pr-review--in-diff-review-thread-links' inside the diff section."
+  (dolist (item pr-review--in-diff-review-thread-links)
+    (pcase-let ((`(,goto-diff-line-args ,title ,details ,id) item))
       (save-excursion
-        (when (pr-review--goto-diff-line
-               .path .diffSide .line)
+        (when (apply #'pr-review--goto-diff-line goto-diff-line-args)
           (forward-line)
           (insert
            (propertize
-            (concat (format "> %s comments from " (length .comments.nodes))
-                    (string-join
-                     (seq-uniq
-                      (mapcar (lambda (cmt)
-                                (concat "@" (alist-get 'login (alist-get 'author cmt))))
-                              .comments.nodes))
-                     ", ")
-                    (when .isResolved " - RESOLVED")
-                    "  ")
+            title
             'face 'pr-review-in-diff-thread-title-face
-            'pr-review-eldoc-content (let-alist (car .comments.nodes)
-                                       (concat (pr-review--propertize-username .author.login)
-                                               ": " .body))))
+            'pr-review-eldoc-content details))
           (insert-button
            "Go to thread"
            'face 'pr-review-button-face
            'action (lambda (_)
                      (push-mark)
-                     (pr-review--goto-section-with-value .id)
+                     (pr-review--goto-section-with-value id)
                      (recenter)))
           (insert (propertize "\n" 'face 'pr-review-in-diff-thread-title-face)))))))
 
@@ -386,6 +379,31 @@ It will be inserted at the beginning."
 
 (defun pr-review--insert-review-thread-section (top-comment review-thread)
   "Insert review thread section with TOP-COMMENT and REVIEW-THREAD."
+
+  ;; append to pr-review--in-diff-review-thread-links first
+  (let-alist review-thread
+    ;; when only some commits are selected, in-diff review threads are not displayed.
+    ;; I don't have an easy way to know if certain review threads is for the selected commits.
+    (when (and (not .isOutdated) (null pr-review--selected-commits))
+      (push (list (list .path .diffSide .line)
+                  ;; title
+                  (concat (format "> %s comments from " (length .comments.nodes))
+                          (string-join
+                           (seq-uniq
+                            (mapcar (lambda (cmt)
+                                      (concat "@" (alist-get 'login (alist-get 'author cmt))))
+                                    .comments.nodes))
+                           ", ")
+                          (when .isResolved " - RESOLVED")
+                          "  ")
+                  ;; details
+                  (let-alist (car .comments.nodes)
+                    (concat (pr-review--propertize-username .author.login)
+                            ": " .body))
+                  ;; href section id
+                  .id)
+            pr-review--in-diff-review-thread-links)))
+
   (magit-insert-section section (pr-review--review-thread-section
                                  (alist-get 'id review-thread)
                                  (eq t (alist-get 'isCollapsed review-thread)))
@@ -906,8 +924,7 @@ it can be displayed in a single line."
     (insert "\n")
     (pr-review--insert-review-action-buttons)
     (pr-review--insert-merge-close-reopen-action-buttons)
-    (mapc 'pr-review--insert-in-diff-review-thread-link
-          (let-alist pr .reviewThreads.nodes))
+    (pr-review--insert-in-diff-review-thread-links)
     (dolist (context (let-alist status-check-rollup .contexts.nodes))
       (when (equal (alist-get '__typename context) "CheckRun")
         (mapc 'pr-review--insert-in-diff-checkrun-annotation

@@ -153,6 +153,7 @@ Which means that all sections are collapsed."
   (let* ((pr-info (pr-review--fetch-pr-info))
          pr-diff section-id)
     (setq-local pr-review--pr-info pr-info
+                pr-review--in-diff-review-thread-links nil
                 mark-ring nil
                 pr-review--char-pixel-width (shr-string-pixel-width "-"))
     (setq pr-diff (pr-review--fetch-compare-cached
