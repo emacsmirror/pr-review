@@ -100,7 +100,21 @@
                                 (get-text-property 0 'category candidate)))
                             :annotation-function (lambda (candidate)
                                                    (concat " " (get-text-property 0 'annotation candidate))))))
-    (completing-read "Quick action: " candidates nil t)))
+    (let ((result (completing-read "Quick action: " candidates nil t)))
+      (if (string-suffix-p "@" result)
+          (let* ((users (pr-review--get-assignable-users))
+                 (user-candidates (mapcar (lambda (user)
+                                            (let ((login (alist-get 'login user))
+                                                  (name (alist-get 'name user)))
+                                              (propertize login 'annotation name)))
+                                          (hash-table-values users)))
+                 (completion-extra-properties
+                  '(:annotation-function (lambda (candidate)
+                                           (concat " " (get-text-property 0 'annotation candidate)))))
+                 (selected-users (completing-read-multiple "Select users: " user-candidates)))
+            (concat (string-remove-suffix "@" result) " "
+                    (mapconcat (lambda (user) (concat "@" user)) selected-users " ")))
+        result))))
 
 
 (pr-review-defmethod-gitlab pr-review-general-interactive-action ()

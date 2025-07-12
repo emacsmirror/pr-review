@@ -278,7 +278,7 @@ BODY: review comment body."
               `((query . ,query)))
     .search.nodes))
 
-(defun pr-review--get-assignable-users-1 (repo-owner repo-name)
+(cl-defmethod pr-review--get-assignable-users-1 (repo-owner repo-name)
   "Get assignable users for REPO-OWNER/REPO-NAME.
 Return hashtable of login -> alist of \='id, \='login, \='name."
   (let ((has-next-page t)

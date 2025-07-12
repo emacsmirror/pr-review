@@ -121,5 +121,21 @@
                                           (projectPath . ,(pr-review--glab-project-path))
                                           (title . ,title))))))
 
+
+(pr-review-defmethod-gitlab pr-review--get-assignable-users-1 (repo-owner repo-name)
+  (when-let* ((resp (apply #'ghub-request
+                           "GET"
+                           (format "/projects/%s/members/all" (url-hexify-string (concat repo-owner "/" repo-name)))
+                           '()
+                           (pr-review--ghub-common-request-args)))
+              (res (make-hash-table :test 'equal)))
+    (mapc (lambda (usr) (let-alist usr
+                          (puthash .username (list (cons 'id .id)
+                                                   (cons 'login .username)
+                                                   (cons 'name .name))
+                                   res)))
+          resp)
+    res))
+
 (provide 'pr-review-glab-api)
 ;;; pr-review-glab-api.el ends here
