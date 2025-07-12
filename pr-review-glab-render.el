@@ -125,6 +125,7 @@
           (oset section updatable .userPermissions.adminNote)
           (oset section update-id .id)
           (when .position.filePath
+            ;; filePath is the new file path. it's always the new file path regardless where is the comment
             (setq goto-diff-line-args (if .position.newLine
                                           (list .position.filePath "RIGHT" .position.newLine)
                                         (list .position.filePath "LEFT" .position.oldLine))))
@@ -141,7 +142,10 @@
             " - "
             (pr-review--format-timestamp .createdAt)
             (when resolved
-              (concat " - " (propertize "RESOLVED" 'face 'pr-review-info-state-face))))
+              (concat " - " (propertize "RESOLVED" 'face 'pr-review-info-state-face)))
+            (when (and .position.diffRefs.headSha (not (equal .position.diffRefs.headSha
+                                                              (let-alist pr-review--pr-info .diffRefs.headSha))))
+              (concat " - " (propertize "OUTDATED" 'face 'pr-review-info-state-face))))
           (pr-review--insert-html .bodyHtml))
 
         (dolist (note (cdr notes))
