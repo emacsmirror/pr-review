@@ -38,9 +38,7 @@
                                   :foreground ,(alist-get 'textColor label)
                                   :inherit pr-review-label-face)))
                   .labels.nodes " ")))
-    (insert "  ")
-    ;; TODO: edit labels
-    ))
+    (insert "  ")))
 
 (defun pr-review--glab-insert-mergeability-info (pr-info)
   (let-alist pr-info
@@ -74,13 +72,6 @@
                  (insert (pr-review--propertize-keyword status)
                          ": "
                          (mapconcat #'pr-review--propertize-username users ", "))
-                 ;; TODO
-                 ;; (when (equal status "UNREVIEWED")
-                 ;;   (insert " ")
-                 ;;   (insert-button
-                 ;;    "Request Review"
-                 ;;    'face 'pr-review-button-face
-                 ;;    'action (lambda (_) (call-interactively #'pr-review-request-reviews))))
                  (insert "\n"))
                groups))))
 
@@ -221,7 +212,6 @@
             " - "
             (pr-review--format-timestamp .createdAt)
             (if .subscribed
-                ;; TODO subscribe action
                 (concat " - " (pr-review--propertize-keyword "SUBSCRIBED"))
               "")
             "\n")
@@ -267,10 +257,7 @@
       (pr-review--insert-diff diff))
     (insert "\n")
     (pr-review--glab-insert-footer-buttons)
-    (pr-review--insert-in-diff-review-thread-links)
-    ;; TODO: in-diff checks
-    )
-  )
+    (pr-review--insert-in-diff-review-thread-links)))
 
 (pr-review-defmethod-gitlab pr-review--insert-pr (pr diff)
   (magit-insert-section section (pr-review--root-section)

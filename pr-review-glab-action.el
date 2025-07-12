@@ -101,6 +101,7 @@
                             :annotation-function (lambda (candidate)
                                                    (concat " " (get-text-property 0 'annotation candidate))))))
     (let ((result (completing-read "Quick action: " candidates nil t)))
+      ;; TODO: also support labels
       (if (string-suffix-p "@" result)
           (let* ((users (pr-review--get-assignable-users))
                  (user-candidates (mapcar (lambda (user)
