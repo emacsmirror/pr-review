@@ -35,6 +35,7 @@
 
 (require 'pr-review-glab-api)
 (require 'pr-review-glab-render)
+(require 'pr-review-glab-action)
 
 (require 'tabulated-list)
 

@@ -257,19 +257,18 @@ Will confirm before sending the request."
     (_
      (error "Cannot close or reopen PR in current state"))))
 
-(defun pr-review-close-or-reopen-or-merge (action)
-  "Close or re-open or merge based on ACTION.
-Used for interactive selection one of them."
-  (interactive (list (let ((actions pr-review--merge-methods))
+(cl-defmethod pr-review-general-interactive-action ()
+  "Close or re-open or merge, prompt to interactive select the action."
+  (let ((action (let ((actions pr-review--merge-methods))
                        (when-let ((close-or-reopen-action (pr-review--close-or-reopen-action)))
                          (setq actions
                                (append actions
                                        (list (upcase (symbol-name close-or-reopen-action))))))
                        (completing-read "Select action: "
                                         actions nil 'require-match))))
-  (if (member action pr-review--merge-methods)
-      (pr-review-merge action)
-    (pr-review-close-or-reopen)))
+    (if (member action pr-review--merge-methods)
+        (pr-review-merge action)
+      (pr-review-close-or-reopen))))
 
 (defun pr-review-edit-comment ()
   "Edit comment under current point."
@@ -437,7 +436,7 @@ Based on current context, may be: resolve thread, submit review."
          (pred (lambda (_) pr-review--pending-review-threads)))
      (call-interactively #'pr-review-submit-review))
     (_
-     (call-interactively #'pr-review-close-or-reopen-or-merge))))
+     (funcall #'pr-review-general-interactive-action))))
 
 
 (defun pr-review-context-edit ()

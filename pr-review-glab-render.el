@@ -171,6 +171,17 @@
           (insert "\n")))
     (insert "\n")))
 
+
+(defun pr-review--glab-insert-footer-buttons ()
+  "Insert text and buttons at the footer."
+  (insert "Add ")
+  (insert-button "COMMENT" 'face 'pr-review-button-face
+                 'action (lambda (_) (pr-review-comment)))
+  (insert " or ")
+  (insert-button "ACTION" 'face 'pr-review-button-face
+                 'action (lambda (_) (pr-review-general-interactive-action)))
+  (insert " \n"))
+
 (defun pr-review--glab-insert-pr-body (pr diff)
   (let-alist pr
     (pr-review--insert-link .webUrl .webUrl)
@@ -231,8 +242,7 @@
                   (format " - Only viewing selected %d commits" (length pr-review--selected-commits)))))
       (pr-review--insert-diff diff))
     (insert "\n")
-    (pr-review--insert-review-action-buttons)
-    (pr-review--insert-merge-close-reopen-action-buttons)
+    (pr-review--glab-insert-footer-buttons)
     ;; TODO: in-diff-review thread
     ;; TODO: in-diff checks
     )
