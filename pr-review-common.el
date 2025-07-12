@@ -169,6 +169,7 @@
    (updatable :initform nil)
    (update-id :initform nil)
    (reply-id :initform nil)
+   (is-resolvable :initform t)
    (is-resolved :initform nil)))
 
 (defclass pr-review--review-thread-item-section (magit-section)

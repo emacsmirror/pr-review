@@ -402,6 +402,13 @@ When invoked with prefix, prompt for filepath."
   (or (pr-review--review-thread-section-p section)
       (pr-review--review-thread-item-section-p section)))
 
+(defun pr-review--review-thread-context-and-resolvable-p (section)
+  "Check weather SECTION is a review thread (or its children) and is resolvable."
+  (when (pr-review--review-thread-item-section-p section)
+    (setq section (oref section parent)))
+  (and (pr-review--review-thread-section-p section)
+       (oref section is-resolvable)))
+
 (defun pr-review--diff-context-p (section)
   "Check whether SECTION is a diff section (or its children)."
   (or (pr-review--diff-section-p section)
@@ -429,7 +436,7 @@ reply to thread, post comment, add/edit review on diff."
 Based on current context, may be: resolve thread, submit review."
   (interactive)
   (pcase (magit-current-section)
-    ((pred pr-review--review-thread-context-p)
+    ((pred pr-review--review-thread-context-and-resolvable-p)
      (pr-review-resolve-thread))
     ;; in diff, or has pending review threads
     ((or (pred pr-review--diff-context-p)

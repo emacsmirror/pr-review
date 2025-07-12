@@ -118,6 +118,7 @@
                                     (alist-get 'id discussion)  ;; not discussion's id. for editing
                                     resolved)
         (oset section is-resolved resolved)
+        (oset section is-resolvable (alist-get 'resolvable discussion))
         (oset section reply-id (alist-get 'replyId discussion))
         (let-alist first-note
           (oset section body .body)
