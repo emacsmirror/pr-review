@@ -105,12 +105,15 @@
   (save-excursion
     (goto-char pt)
     (beginning-of-line)
-    (let (prop)
+    (let (prop side)
       (cond
        ((setq prop (get-text-property (point) 'pr-review-diff-line-left))
-        (cons "LEFT" prop))
+        (setq side "LEFT"))
        ((setq prop (get-text-property (point) 'pr-review-diff-line-right))
-        (cons "RIGHT" prop))))))
+        (setq side "RIGHT")))
+      (when side
+        (cons side (let-alist prop
+                     (cons .path .line)))))))
 
 
 (declare-function pr-review--insert-in-diff-pending-review-thread "pr-review-render")

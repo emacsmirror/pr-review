@@ -248,12 +248,14 @@ MARGIN count of spaces are added at the start of every line."
 
     (goto-char beg)
     (forward-line -1)
-    (let (filename left right current-left-right)
+    (let (filename filename-orig left right current-left-right)
       (while (zerop (forward-line))
         (let ((section-data (get-text-property (point) 'magit-section)))
           (when (magit-file-section-p section-data)
-            (setq filename (oref section-data value))
-            (set-text-properties 0 (length filename) nil filename))
+            (setq filename (oref section-data value)
+                  filename-orig (or (oref section-data source) filename))
+            (set-text-properties 0 (length filename) nil filename)
+            (set-text-properties 0 (length filename-orig) nil filename-orig))
           (when (and (magit-hunk-section-p section-data)
                      (magit-section-position-in-heading-p))
             (setq left (car (oref section-data from-range))
@@ -270,11 +272,17 @@ MARGIN count of spaces are added at the start of every line."
           (when (car current-left-right)
             (add-text-properties
              (point) (1+ (point))
-             `(pr-review-diff-line-left ,(cons filename (car current-left-right)))))
+             `(pr-review-diff-line-left
+               ((path . ,filename)
+                (path-orig . ,filename-orig)
+                (line . ,(car current-left-right))))))
           (when (cdr current-left-right)
             (add-text-properties
              (point) (1+ (point))
-             `(pr-review-diff-line-right ,(cons filename (cdr current-left-right))))))))))
+             `(pr-review-diff-line-right
+               ((path . ,filename)
+                (path-orig . ,filename-orig)
+                (line . ,(cdr current-left-right)))))))))))
 
 (defun pr-review--hide-generated-files ()
   "Hide file sections for generated files."
@@ -309,9 +317,10 @@ return t on success."
                        'pr-review-diff-line-right)
                      (cons filepath line)
                      (lambda (target val)  ;; line may be null, in which case, match any line
-                       (and (equal (car target) (car val))
-                            (or (null (cdr target))
-                                (equal (cdr target) (cdr val))))))))
+                       (let-alist val
+                         (and (equal (car target) .path)
+                              (or (null (cdr target))
+                                  (equal (cdr target) .line))))))))
     (goto-char (prop-match-beginning match))
     t))
 
