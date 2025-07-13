@@ -238,7 +238,7 @@ If RESOLVE-OR-UNRESOLVE is non-nil, do resolve; otherwise do unresolve."
                                 'unresolve-review-thread)
                               `((input . ((threadId . ,review-thread-id))))))
 
-(defun pr-review--post-review (pr-node-id commit-id event pending-threads body)
+(cl-defgeneric pr-review--post-review (pr-node-id commit-id event pending-threads body)
   "Post review to PR-NODE-ID with commit COMMIT-ID.
 EVENT: review action, e.g. APPROVE;
 PENDING-THREADS: inline review threads;

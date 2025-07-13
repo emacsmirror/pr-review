@@ -1,0 +1,7 @@
+mutation($input: CreateDiffNoteInput!) {
+  createDiffNote(input: $input) {
+    note {
+      id
+    }
+  }
+}

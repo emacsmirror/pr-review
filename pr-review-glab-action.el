@@ -126,5 +126,40 @@
       (pr-review-refresh))))
 
 
+(pr-review-defmethod-gitlab pr-review--get-review-thread-input-at-current-point ()
+  (when pr-review--selected-commits
+    (error "Adding review with partial selected commits are not supported yet"))
+  (save-excursion
+    (when (use-region-p)
+      (goto-char (1- (region-end))))
+    (beginning-of-line)
+    ;; https://docs.gitlab.com/api/discussions/#create-a-new-thread-in-the-merge-request-diff
+    (let ((left-prop (get-text-property (point) 'pr-review-diff-line-left))
+          (right-prop (get-text-property (point) 'pr-review-diff-line-right)))
+      (cond
+       ((and right-prop (not left-prop))
+        `((paths . ((oldPath . ,(alist-get 'path-orig right-prop))
+                    (newPath . ,(alist-get 'path right-prop))))
+          (newLine . ,(alist-get 'line right-prop))
+          (-gh-compat-info . ((path . ,(alist-get 'path right-prop))
+                              (side . "RIGHT")
+                              (line . ,(alist-get 'line right-prop))))))
+       ((and left-prop (not right-prop))
+        `((paths . ((oldPath . ,(alist-get 'path-orig left-prop))
+                    (newPath . ,(alist-get 'path left-prop))))
+          (oldLine . ,(alist-get 'line left-prop))
+          (-gh-compat-info . ((path . ,(alist-get 'path left-prop))
+                              (side . "LEFT")
+                              (line . ,(alist-get 'line left-prop))))))
+       ((and left-prop right-prop)
+        `((paths . ((oldPath . ,(alist-get 'path-orig left-prop))
+                    (newPath . ,(alist-get 'path left-prop))))
+          (oldLine . ,(alist-get 'line left-prop))
+          (newLine . ,(alist-get 'line right-prop))
+          (-gh-compat-info . ((path . ,(alist-get 'path left-prop))
+                              (side . "LEFT")
+                              (line . ,(alist-get 'line left-prop))))))))))
+
+
 (provide 'pr-review-glab-action)
 ;;; pr-review-glab-action.el ends here

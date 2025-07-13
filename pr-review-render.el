@@ -329,8 +329,11 @@ return t on success."
 If ALLOW-FALLBACK is non-nil, when the line for the thread cannot be found.
 It will be inserted at the beginning."
   (save-excursion
-    (let (beg end)
-      (let-alist pending-review-thread
+    (let ((body (alist-get 'body pending-review-thread))
+          (info (or (alist-get '-gh-compat-info pending-review-thread)
+                    pending-review-thread))
+          beg end)
+      (let-alist info
         (when (or (pr-review--goto-diff-line .path .side .line)
                   allow-fallback)
           (forward-line)
@@ -341,7 +344,7 @@ It will be inserted at the beginning."
                                         (format "%s:%s" .side .line))
                                       "\n")
                               'face 'pr-review-in-diff-pending-begin-face))
-          (pr-review--insert-fontified .body 'gfm-mode nil
+          (pr-review--insert-fontified body 'gfm-mode nil
                                        'pr-review-in-diff-pending-body-face)
           (insert (propertize " \n" 'face 'pr-review-in-diff-pending-end-face))
           (setq end (point))))

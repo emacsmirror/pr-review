@@ -131,29 +131,37 @@ BODY is the result text user entered."
       (set-buffer-modified-p t)
       (push review-thread pr-review--pending-review-threads))))
 
-(defun pr-review-add-pending-review-thread ()
-  "Add pending review thread under current point (must be in a diff line).
-When a region is active, the review thread is added for multiple lines."
-  (interactive)
+(cl-defgeneric pr-review--get-review-thread-input-at-current-point ()
+  "Return review thread input under current point or region.
+Must be in a diff line, return nil if not.
+Result should be an alist, where 'body will be added addtionally and passed into pr-review--post-review."
   (let* ((line-info (pr-review--get-diff-line-info
                      (if (use-region-p) (1- (region-end)) (point))))
          (start-line-info (when (use-region-p)
                             (pr-review--get-diff-line-info (region-beginning))))
-         region-text
-         review-thread)
+         result)
     (when (equal line-info start-line-info)
       (setq start-line-info nil))
-    (if (or (null line-info)
+    (unless (or (null line-info)
             (and start-line-info
                  (not (equal (cadr line-info) (cadr start-line-info)))))
-        (message "Cannot add review thread at current point")
-      (setq review-thread `((path . ,(cadr line-info))
-                            (line . ,(cddr line-info))
-                            (side . ,(car line-info))))
+      (setq result `((path . ,(cadr line-info))
+                     (line . ,(cddr line-info))
+                     (side . ,(car line-info))))
       (when start-line-info
-        (setq review-thread (append `((startLine . ,(cddr start-line-info))
-                                      (startSide . ,(car start-line-info)))
-                                    review-thread)))
+        (setq result (append `((startLine . ,(cddr start-line-info))
+                               (startSide . ,(car start-line-info)))
+                             result)))
+      result)))
+
+(defun pr-review-add-pending-review-thread ()
+  "Add pending review thread under current point (must be in a diff line).
+When a region is active, the review thread is added for multiple lines."
+  (interactive)
+  (let* (region-text
+         (review-thread (pr-review--get-review-thread-input-at-current-point)))
+    (if (not review-thread)
+        (message "Cannot add review thread at current point")
       (when (use-region-p)
         (setq region-text (replace-regexp-in-string
                            (rx line-start (any ?+ ?- ?\s)) ""
@@ -205,11 +213,14 @@ EVENT is the review action user selected;
 BODY is the result text user entered."
   (when (buffer-live-p orig-buffer)
     (with-current-buffer orig-buffer
-      (pr-review--post-review (alist-get 'id pr-review--pr-info)
-                              (pr-review--current-commit-head)
-                              event
-                              (nreverse pr-review--pending-review-threads)
-                              body)
+      (let ((cleaned-threads (mapcar (lambda (thread)
+                                       (assq-delete-all '-gh-compat-info (copy-alist thread)))
+                                     pr-review--pending-review-threads)))
+        (pr-review--post-review (alist-get 'id pr-review--pr-info)
+                                (pr-review--current-commit-head)
+                                event
+                                (nreverse cleaned-threads)
+                                body))
       (setq-local pr-review--pending-review-threads nil))))
 
 (defun pr-review-submit-review (event)

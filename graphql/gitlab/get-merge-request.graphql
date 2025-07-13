@@ -32,7 +32,7 @@ query($repo_path:ID!, $iid:String!) {
         nodes { name }
       }
 
-      diffRefs { baseSha headSha }
+      diffRefs { baseSha headSha startSha }
       diffStatsSummary { fileCount additions changes deletions }
 
       createdAt

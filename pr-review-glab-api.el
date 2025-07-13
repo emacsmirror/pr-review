@@ -137,5 +137,20 @@
           resp)
     res))
 
+(pr-review-defmethod-gitlab pr-review--post-review (noteable-id commit-id event pending-threads body)
+  (dolist (thread pending-threads)
+    (let* ((body (alist-get 'body thread))
+           (position (assq-delete-all 'body (copy-alist thread))))
+      (let-alist pr-review--pr-info
+        (setf (alist-get 'headSha position) .diffRefs.headSha)
+        (setf (alist-get 'baseSha position) .diffRefs.baseSha)
+        (setf (alist-get 'startSha position) .diffRefs.startSha))
+      (pr-review--execute-graphql 'create-diff-note
+                                  `((input . ((noteableId . ,noteable-id)
+                                              (body . ,body)
+                                              (position . ,position)))))))
+  (when body
+    (pr-review--post-comment noteable-id body)))
+
 (provide 'pr-review-glab-api)
 ;;; pr-review-glab-api.el ends here
