@@ -101,6 +101,7 @@
 
 (defun pr-review--glab-insert-discussion (discussion)
   (let* ((resolved (eq t (alist-get 'resolved discussion)))
+         (resolvable (eq t (alist-get 'resolvable discussion)))
          (notes (let-alist discussion .notes.nodes))
          (first-note (car notes))
          (outdated (let-alist first-note
@@ -113,7 +114,7 @@
                                     (alist-get 'id discussion)
                                     resolved)
         (oset section is-resolved resolved)
-        (oset section is-resolvable (alist-get 'resolvable discussion))
+        (oset section is-resolvable resolvable)
         (oset section reply-id (alist-get 'replyId discussion))
         (let-alist first-note
           (oset section body .body)
@@ -136,8 +137,8 @@
                                            (recenter))))))
             " - "
             (pr-review--format-timestamp .createdAt)
-            (when resolved
-              (concat " - " (propertize "RESOLVED" 'face 'pr-review-info-state-face)))
+            (when resolvable
+              (concat " - " (propertize (if resolved "RESOLVED" "UNRESOLVED") 'face 'pr-review-info-state-face)))
             (when outdated
               (concat " - " (propertize "OUTDATED" 'face 'pr-review-info-state-face))))
           (pr-review--insert-html .bodyHtml))
