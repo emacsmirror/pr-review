@@ -206,8 +206,7 @@ BODY is the result text user entered."
   (when (buffer-live-p orig-buffer)
     (with-current-buffer orig-buffer
       (pr-review--post-review (alist-get 'id pr-review--pr-info)
-                              (or pr-review--selected-commit-head
-                                  (alist-get 'headRefOid pr-review--pr-info))
+                              (pr-review--current-commit-head)
                               event
                               (nreverse pr-review--pending-review-threads)
                               body)
