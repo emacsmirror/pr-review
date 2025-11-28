@@ -112,7 +112,9 @@
     ;; use review-thread-section so that pr-review-reply-to-thread works
     (magit-insert-section section (pr-review--review-thread-section
                                     (alist-get 'id discussion)
-                                    resolved)
+                                    (when (or resolved (member (let-alist first-note .author.name)
+                                                               pr-review-default-hide-commenter))
+                                      'hide))
         (oset section is-resolved resolved)
         (oset section is-resolvable resolvable)
         (oset section reply-id (alist-get 'replyId discussion))

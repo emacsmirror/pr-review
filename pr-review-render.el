@@ -40,6 +40,11 @@
 This can be populated during rendering threads, and will be inserted into diffs at end of rendering.
 Format: list of (goto-diff-line-args  title  details  href-id)")
 
+(defcustom pr-review-default-hide-commenter nil
+  "List of names whose comments are hidden by default (not expanded)."
+  :type '(repeat :tag "Hide comments from" :type string)
+  :group 'pr-review)
+
 (defcustom pr-review-section-indent-width 2
   "Indent width for nested sections."
   :type 'integer
