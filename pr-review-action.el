@@ -28,6 +28,7 @@
 (require 'pr-review-input)
 (require 'pr-review-api)
 (require 'magit-section)
+(require 'magit-log)
 (require 'magit-diff)
 (require 'browse-url)
 
