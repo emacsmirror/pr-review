@@ -320,7 +320,7 @@ Will confirm before sending the request."
               (updatable (oref section updatable))
               (id (or
                    ;; special case: gitlab review-thread-section, use update-id instead of value, because value is the discussion id
-                   (and (pr-review--review-thread-context-p section)
+                   (and (pr-review--review-thread-section-p section)
                         (oref section update-id))
                    (oref section value)))
               (body (oref section body)))
@@ -468,7 +468,8 @@ edit description, edit review comment, edit comment, edit pending diff review."
   (pcase (magit-current-section)
     ((pred pr-review--description-section-p)
      (pr-review-edit-pr-description))
-    ;; pr-review--review-thread-section is only for gitlab
+    ;; pr-review--review-thread-context-p matches both review-thread-section and review-thread-item-section.
+    ;; where review-thread-section is only for gitlab.
     ;; all gitlab "notes" are either review-thread-item or review-thread; no comment-section or review-section
     ((pred pr-review--review-thread-context-p)
      (pr-review-edit-thread-item))
