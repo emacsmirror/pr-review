@@ -47,21 +47,48 @@
     (or pr-review--selected-commit-head .diffRefs.headSha)))
 
 (pr-review-defmethod-gitlab pr-review--fetch-compare (base-ref head-ref)
-  (when-let* ((resp (apply #'ghub-request
-                           "GET"
-                           (format "/projects/%s/repository/compare"
-                                   (url-hexify-string (pr-review--glab-project-path)))
-                           `((from . ,base-ref)
-                             (to . ,head-ref)
-                             (unidiff . "true"))
-                           (pr-review--ghub-common-request-args)))
-              (res ""))
-    (dolist (diff (alist-get 'diffs resp))
+  (let (diffs (res ""))
+    (setq diffs
+          ;; Prefer using https://docs.gitlab.com/api/merge_requests/#get-a-single-merge-request-diff-version
+          ;; This API can return full diff with large files.
+          ;; However it cannot work with arbitrary commits compare.
+          ;; Fallback to /repository/compare
+          (or
+           (when-let* ((base-url (format "/projects/%s/merge_requests/%d"
+                                         (url-hexify-string (pr-review--glab-project-path))
+                                         (caddr pr-review--pr-path)))
+                       (diff-versions (apply #'ghub-request "GET" (concat base-url "/versions") nil
+                                             (pr-review--ghub-common-request-args)))
+                       (diff-version-match
+                        (car (seq-filter (lambda (item)
+                                           (let-alist item
+                                             (and (equal .base_commit_sha base-ref)
+                                                  (equal .head_commit_sha head-ref))))
+                                         diff-versions)))
+                       (resp (apply #'ghub-request "GET"
+                                    (format "%s/versions/%d" base-url (alist-get 'id diff-version-match))
+                                    nil
+                                    (pr-review--ghub-common-request-args))))
+             (alist-get 'diffs resp))
+
+           (when-let* ((resp (apply #'ghub-request
+                                    "GET"
+                                    (format "/projects/%s/repository/compare"
+                                            (url-hexify-string (pr-review--glab-project-path)))
+                                    `((from . ,base-ref)
+                                      (to . ,head-ref)
+                                      (unidiff . "true"))
+                                    (pr-review--ghub-common-request-args))))
+             (alist-get 'diffs resp))))
+
+    (dolist (diff diffs)
       (let-alist diff
         (setq res
               (concat res
                       (format "diff --git %s %s\n" .old_path .new_path)
                       (cond
+                       (.too_large
+                        (format "file too large, cannot be retrieved"))
                        ;; TODO: mode change?
                        (.new_file
                         (format "new file mode %s\n" .b_mode))
