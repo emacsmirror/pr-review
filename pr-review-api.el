@@ -64,7 +64,9 @@
 
 (defun pr-review--ghub-common-request-args ()
   "Return common args for `ghub-request' and `ghub-graphql'."
-  (let ((forge-info (alist-get pr-review--host pr-review-forges-alist nil nil 'equal)))
+  (let ((forge-info (or (alist-get pr-review--host pr-review-forges-alist nil nil 'equal)
+                        ;; default to first entry of pr-review-forges-alist
+                        (cdar pr-review-forges-alist))))
     (list :auth pr-review-ghub-auth-name
           :username (or (nth 2 forge-info) pr-review-ghub-username)
           :host (or (nth 1 forge-info) pr-review-ghub-host)
@@ -74,7 +76,7 @@
   "Get graphql content for NAME (symbol), cached."
   (let ((filename (concat pr-review--bin-dir
                           "graphql/"
-                          (when (eq pr-review--forge 'gitlab) "gitlab/")
+                          (when (eq (plist-get (pr-review--ghub-common-request-args) :forge) 'gitlab) "gitlab/")
                           (symbol-name name) ".graphql")))
     (with-temp-buffer
       (insert-file-contents-literally filename)
@@ -392,7 +394,7 @@ PAGE is the number of pages of the notifications, start from 1."
       (error "Error while getting notifications: %s" res))
     res))
 
-(defun pr-review--mark-notification-read (id)
+(cl-defmethod pr-review--mark-notification-read (id)
   "Mark notification ID as read."
   (pr-review--notifications-pr-info-cache-remove id)  ;; otherwise its pr-info would not be refreshed
   (apply #'ghub-request
@@ -400,7 +402,7 @@ PAGE is the number of pages of the notifications, start from 1."
          '()
          (pr-review--ghub-common-request-args)))
 
-(defun pr-review--delete-notification (id)
+(cl-defmethod pr-review--delete-notification (id)
   "Delete notification ID."
   (pr-review--notifications-pr-info-cache-remove id)  ;; otherwise its pr-info would not be refreshed
   (apply #'ghub-request
@@ -408,7 +410,7 @@ PAGE is the number of pages of the notifications, start from 1."
          '()
          (pr-review--ghub-common-request-args)))
 
-(defun pr-review--get-notifications-with-extra-pr-info (&rest args)
+(cl-defmethod pr-review--get-notifications-with-extra-pr-info (&rest args)
   "Like `pr-review--get-notifications' with ARGS, but with extra PR info.
 The PR info would be cached if possible."
   (unless pr-review--notifications-pr-info-cache

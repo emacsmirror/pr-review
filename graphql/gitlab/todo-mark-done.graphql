@@ -1,0 +1,5 @@
+mutation($input:TodoMarkDoneInput!) {
+  todoMarkDone(input: $input) {
+    todo { id }
+  }
+}

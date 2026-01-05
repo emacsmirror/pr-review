@@ -1,0 +1,32 @@
+query($todo_state:[TodoStateEnum!], $after:String) {
+  currentUser {
+    todos(state: $todo_state, first: 50, after: $after) {
+      pageInfo {
+        startCursor
+        endCursor
+      }
+      nodes {
+        id
+        action
+        state
+        body
+        createdAt
+        author { name username }
+        project { name fullPath  }
+
+        targetType
+        target {
+            __typename
+            ... on MergeRequest {
+              iid
+              title
+              state
+              webUrl
+            }
+            ... on Issue { webUrl }
+            ... on Commit { webUrl }
+        }
+      }
+    }
+  }
+}

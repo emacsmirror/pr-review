@@ -183,5 +183,34 @@
   (when body
     (pr-review--post-comment noteable-id body)))
 
+
+(defvar-local pr-review--notification-glab-page-cursor nil
+  "Alist of page id to end_cursor.")
+
+(pr-review-defmethod-gitlab pr-review--get-notifications-with-extra-pr-info (include-read page)
+  (let* ((cursor (if (eq page 1)
+                     ""
+                   (or (alist-get (1- page) pr-review--notification-glab-page-cursor)
+                       (user-error "Page %d not found" page))))
+         (resp (pr-review--execute-graphql
+                'get-todos
+                `((todo_state . ,(if include-read ["done" "pending"] ["pending"]))
+                  (after . ,cursor)))))
+    (let-alist resp
+      (setf (alist-get page pr-review--notification-glab-page-cursor)
+            .currentUser.todos.pageInfo.endCursor)
+      .currentUser.todos.nodes)))
+
+
+(pr-review-defmethod-gitlab pr-review--mark-notification-read (id)
+  (pr-review--execute-graphql
+   'todo-mark-done
+   `((input . ((id . ,id))))))
+
+(pr-review-defmethod-gitlab pr-review--delete-notification (id)
+  ;; TODO: gitlab does not support deletion yet
+  (warn "Deleting notification not supported, mark as done instead")
+  (pr-review--mark-notification-read id))
+
 (provide 'pr-review-glab-api)
 ;;; pr-review-glab-api.el ends here

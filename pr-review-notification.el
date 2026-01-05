@@ -28,6 +28,9 @@
 (require 'pr-review-listview)
 (require 'cl-seq)
 
+(require 'pr-review-notification-render)
+(require 'pr-review-glab-notification-render)
+
 (declare-function pr-review-open "pr-review")
 
 
@@ -96,9 +99,10 @@
               tabulated-list-use-header-line nil
               tabulated-list-padding 2))
 
-(defun pr-review--notification-entry-sort-updated-at (a b)
+(defun pr-review--notification-entry-sort-by-time (a b)
   "Sort tabulated list entries by timestamp for A and B."
-  (string< (alist-get 'updated_at (car a)) (alist-get 'updated_at (car b))))
+  (string< (pr-review--notification-entry-time (car a))
+           (pr-review--notification-entry-time (car b))))
 
 ;; list of (id type last_updated)
 ;; type is one of: 'read 'delete
@@ -129,99 +133,12 @@ Confirm if there's mark entries."
          ('read "-")
          ('delete "D")
          (_ ""))))
-    (if (alist-get 'unread entry)
+    (if (pr-review--notification-unread entry)
         (add-face-text-property beg (point) 'pr-review-listview-unread-face 'append)
       (add-face-text-property beg (point) 'pr-review-listview-read-face))  ;; for read-face, its priority is higher. do not append
     (when (pr-review--notification-unsubscribed entry)
       (add-face-text-property beg (point) 'pr-review-listview-unsubscribed-face))
     (pulse-momentary-highlight-region 0 (point))))
-
-(defun pr-review--notification-format-type (entry)
-  "Format type column of notification ENTRY."
-  (let-alist entry
-    (pcase .subject.type
-      ("PullRequest" "PR")
-      ("Issue" "ISS")
-      (_ .subject.type))))
-
-(defun pr-review--notification-unsubscribed (entry)
-  "Return the subscription state if ENTRY is unsubscribed, nil if subscribed."
-  (let-alist entry
-    (when (and .pr-info.viewerSubscription
-               (not (equal .pr-info.viewerSubscription "SUBSCRIBED")))
-      .pr-info.viewerSubscription)))
-
-(defun pr-review--notification-format-activities (entry)
-  "Format activities for notification ENTRY."
-  (let ((my-login (let-alist (pr-review--whoami-cached) .viewer.login))
-        (op (let-alist entry .pr-info.author.login))
-        ;; for the following me-* status: t means yes, 'new means yes+new
-        me-mentioned me-assigned me-review-requested me-approved
-        new-participants all-participants
-        all-reviewers approved-reviewers rejected-reviewers)
-    (let-alist entry
-      (when op
-        (push op all-participants)
-        (unless .last_read_at
-          ;; add author to commenters if no last read
-          (push op new-participants)))
-      (dolist (opinionated-review .pr-info.latestOpinionatedReviews.nodes)
-        (let-alist opinionated-review
-          (pcase .state
-            ("APPROVED" (push .author.login approved-reviewers))
-            ("CHANGES_REQUESTED" (push .author.login rejected-reviewers)))))
-      (setq all-reviewers (mapcar (lambda (n) (let-alist n .requestedReviewer.login)) .pr-info.reviewRequests.nodes)
-            me-assigned (cl-find-if (lambda (node) (equal my-login (let-alist node .login)))
-                                    .pr-info.assignees.nodes)
-            me-review-requested (member my-login all-reviewers)
-            me-approved (member my-login approved-reviewers)))
-    (dolist (timeline-item (let-alist entry .pr-info.timelineItemsSince.nodes))
-      (let-alist timeline-item
-        (pcase .__typename
-          ("AssignedEvent" (when (equal my-login .assignee.login)
-                             (setq me-assigned 'new)))
-          ("ReviewRequestedEvent" (when (and (equal my-login .requestedReviewer.login) (not me-approved))
-                                    (setq me-review-requested 'new)))
-          ("MentionedEvent" (when (equal my-login .actor.login)
-                              (setq me-mentioned t)))
-          ((or "IssueComment" "PullRequestReview")
-           (unless (equal my-login .author.login)
-             (push .author.login new-participants)))
-          )))
-    (dolist (participant-item (let-alist entry .pr-info.participants.nodes))
-      (let ((login (let-alist participant-item .login)))
-        (unless (or (equal login my-login) (member login new-participants))
-          (push login all-participants))))
-    (setq all-participants (delete-dups (append (reverse new-participants)
-                                                (reverse all-participants))))
-    (concat (let-alist entry
-              (when (and .pr-info.state (not (equal .pr-info.state "OPEN")))
-                (concat (propertize (downcase .pr-info.state) 'face 'pr-review-listview-status-face) " ")))
-            (when me-mentioned (propertize "+mentioned " 'face 'pr-review-listview-important-activity-face))
-            (pcase me-assigned
-              ('new (propertize "+assigned " 'face 'pr-review-listview-important-activity-face))
-              ('t (propertize "assigned " 'face 'pr-review-listview-status-face)))
-            (pcase me-review-requested
-             ('new (propertize "+review_requested " 'face 'pr-review-listview-important-activity-face))
-             ('t (propertize "review_requested " 'face 'pr-review-listview-status-face)))
-            (when me-approved
-              (propertize "approved " 'face 'pr-review-listview-status-face))
-            (when all-participants
-              (mapconcat
-               (lambda (x)
-                 (let ((is-new (member x new-participants)))
-                   (propertize
-                    (concat
-                     (when is-new "+")
-                     x
-                     (cond
-                      ((equal x op) "@")
-                      ((member x approved-reviewers) "#")
-                      ((member x rejected-reviewers) "!")
-                      ((member x all-reviewers) "?")))
-                    'face
-                    (if is-new nil 'pr-review-listview-unimportant-activity-face))))
-               all-participants " ")))))
 
 (defun pr-review--notification-refresh ()
   "Refresh notification buffer."
@@ -229,7 +146,7 @@ Confirm if there's mark entries."
     (error "Only available in pr-review-notification-mode"))
 
   (setq-local tabulated-list-format
-              [("Updated at" 12 pr-review--notification-entry-sort-updated-at)
+              [("Updated at" 12 pr-review--notification-entry-sort-by-time)
                ("Type" 4 t)
                ("Title" 85 nil)
                ("Activities" 25 nil)])
@@ -252,25 +169,16 @@ Confirm if there's mark entries."
     ;; refresh marks, remove those with outdated last_updated
     (let ((current-last-updated (make-hash-table :test 'equal)))
       (dolist (entry resp)
-        (let-alist entry
-          (puthash .id .updated_at current-last-updated)))
+        (puthash (alist-get 'id entry)
+                 (pr-review--notification-entry-time entry)
+                 current-last-updated))
       (setq-local pr-review--notification-marks
                   (seq-filter (lambda (item) (equal (nth 2 item)
                                                     (gethash (nth 0 item) current-last-updated)))
                               pr-review--notification-marks)))
     (setq-local
      tabulated-list-entries
-     (mapcar (lambda (entry)
-               (let-alist entry
-                 (list entry
-                       (vector
-                        (pr-review--listview-format-time .updated_at)
-                        (pr-review--notification-format-type entry)
-                        (format "[%s] %s" .repository.full_name (string-trim-right .subject.title))
-                        (pr-review--notification-format-activities entry)
-                        ;; .reason
-                        ))))
-             resp))
+     (mapcar (lambda (entry) (list entry (vconcat (pr-review--notification-format-entry entry)))) resp))
     (tabulated-list-init-header)
     (message (concat (format "Notifications refreshed, %d items." (length resp))
                      (when (> (length resp-orig) (length resp))
@@ -305,18 +213,18 @@ Confirm if there's mark entries."
   "Mark the entry in current line as read."
   (interactive)
   (when-let ((entry (pr-review-notification-remove-mark)))
-    (let-alist entry
-      (push (list .id 'read .updated_at) pr-review--notification-marks)
-      (tabulated-list-put-tag "-"))
+    (push (list (alist-get 'id entry) 'read (pr-review--notification-entry-time entry))
+          pr-review--notification-marks)
+    (tabulated-list-put-tag "-")
     (forward-line)))
 
 (defun pr-review-notification-mark-delete ()
   "Mark the entry in current line as delete."
   (interactive)
   (when-let ((entry (pr-review-notification-remove-mark)))
-    (let-alist entry
-      (push (list .id 'delete .updated_at) pr-review--notification-marks)
-      (tabulated-list-put-tag "D"))
+    (push (list (alist-get 'id entry) 'delete (pr-review--notification-entry-time entry))
+          pr-review--notification-marks)
+    (tabulated-list-put-tag "D")
     (forward-line)))
 
 (defun pr-review-notification-execute-mark ()
@@ -334,27 +242,23 @@ Confirm if there's mark entries."
 
 (defun pr-review--notification-open (entry)
   "Open notification ENTRY."
-  (let-alist entry
-    (when (and .unread
-               (not (pr-review--notification-mark entry)))  ;; do not alter mark
-      (push (list .id 'read .updated_at) pr-review--notification-marks)
-      (tabulated-list-put-tag "-"))
-    (if (equal .subject.type "PullRequest")
-        (let ((pr-id (when (string-match (rx (group (+ (any digit))) eos) .subject.url)
-                       (match-string 1 .subject.url))))
-          (pr-review-open .repository.owner.login .repository.name
-                          (string-to-number pr-id)
-                          nil  ;; new window
-                          nil  ;; anchor nil; do not go to latest comment, use last_read_at
-                          .last_read_at))
-      (browse-url .subject.url))))
+  (when (and (pr-review--notification-unread entry)
+             (not (pr-review--notification-mark entry)))  ;; do not alter mark
+    (push (list (alist-get 'id entry) 'read (pr-review--notification-entry-time entry))
+          pr-review--notification-marks)
+    (tabulated-list-put-tag "-"))
+  (if-let* ((args (pr-review--notification-open-args entry)))
+      (pr-review-open pr-review--host (nth 0 args) (nth 1 args) (nth 2 args)
+                      nil  ;; new window
+                      nil  ;; anchor nil; do not go to latest comment, use last_read_at
+                      (nth 3 args))  ;; last read at
+    (browse-url (pr-review--notification-entry-url entry))))
 
 (defun pr-review-notification-open-in-browser ()
   "Open current notification entry in browser."
   (interactive)
   (when-let ((entry (get-text-property (point) 'tabulated-list-id)))
-    (let-alist entry
-      (browse-url-with-browser-kind 'external .subject.url))))
+    (browse-url-with-browser-kind 'external (pr-review--notification-entry-url entry))))
 
 ;;;###autoload
 (defun pr-review-notification ()
@@ -362,6 +266,9 @@ Confirm if there's mark entries."
   (interactive)
   (with-current-buffer (get-buffer-create "*pr-review notifications*")
     (pr-review-notification-mode)
+    (let ((req-args (pr-review--ghub-common-request-args)))
+      (setq-local pr-review--forge (plist-get req-args :forge)
+                  pr-review--host (plist-get req-args :host)))
     (pr-review--notification-refresh)
     (tabulated-list-print)
     (switch-to-buffer (current-buffer))))
