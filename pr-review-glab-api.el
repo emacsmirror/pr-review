@@ -165,8 +165,10 @@
     res))
 
 (pr-review-defmethod-gitlab pr-review--post-review (noteable-id commit-id event pending-threads body)
-  (unless (equal event "COMMENT")
-    (message "Action %s is not supported, ignore" event))
+  (pcase event
+    ("COMMENT" nil)
+    ("APPROVE" (setq body (concat "/approve\n" body)))
+    (_ (warn "Action %s is not supported, ignore" event)))
   (dolist (thread pending-threads)
     (let* ((body (alist-get 'body thread))
            (position (assq-delete-all 'body (copy-alist thread))))
