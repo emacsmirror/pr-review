@@ -57,6 +57,14 @@
        (propertize .autoMergeStrategy 'face 'pr-review-info-state-face)))
     (insert "\n")))
 
+(defun pr-review--glab-insert-pipeline-info (pr-info)
+  (let-alist pr-info
+    (when .headPipeline.status
+      (insert (pr-review--propertize-keyword "PIPELINE")
+              ": "
+              (pr-review--propertize-keyword .headPipeline.status)
+              "\n"))))
+
 (defun pr-review--glab-insert-reviewers-info (pr-info)
   (let ((groups (make-hash-table :test 'equal)))
     (let-alist pr-info
@@ -219,6 +227,7 @@
               "")
             "\n")
     (pr-review--glab-insert-mergeability-info pr)
+    (pr-review--glab-insert-pipeline-info pr)
     (insert "\n")
     (pr-review--glab-insert-reviewers-info pr)
     (pr-review--glab-insert-assignees-info pr)

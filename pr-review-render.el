@@ -79,7 +79,7 @@ Format: list of (goto-diff-line-args  title  details  href-id)")
                   'pr-review-success-state-face)
                  ((member trimmed-str '("FAILURE" "TIMED_OUT" "ERROR" "CHANGES_REQUESTED" "CLOSED" "CONFLICTING" "UNKNOWN" "NOT_MERGEABLE" "FAILED"))
                   'pr-review-error-state-face)
-                 ((member trimmed-str '("RESOLVED" "OUTDATED" "WARNING"))
+                 ((member trimmed-str '("RESOLVED" "OUTDATED" "WARNING" "PREPARING" "PENDING" "CREATED" "RUNNING" "SKIPPED"))
                   'pr-review-info-state-face)
                  (t
                   'pr-review-state-face)))))
