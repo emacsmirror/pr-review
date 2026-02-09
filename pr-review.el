@@ -54,7 +54,7 @@
     (define-key map (kbd "C-c C-v") #'pr-review-view-file)
     (define-key map (kbd "C-c C-f") #'pr-review-goto-file)
     (define-key map (kbd "C-c C-d") #'pr-review-ediff-file)
-    (define-key map (kbd "C-c C-o") #'pr-review-open-in-default-browser)
+    (define-key map (kbd "C-c C-o") #'pr-review-open-in-external-browser)
     (define-key map (kbd "C-c C-q") #'pr-review-request-reviews)
     (define-key map (kbd "C-c C-l") #'pr-review-set-labels)
     (define-key map (kbd "C-c C-j") #'pr-review-update-reactions)
@@ -85,7 +85,7 @@
       (kbd "C-k") #'magit-section-backward
       (kbd "g k") #'magit-section-backward-sibling
       (kbd "g f") #'pr-review-goto-file
-      (kbd "g o") #'pr-review-open-in-default-browser
+      (kbd "g o") #'pr-review-open-in-external-browser
       [remap evil-previous-line] 'evil-previous-visual-line
       [remap evil-next-line] 'evil-next-visual-line
       (kbd "C-o") #'pop-to-mark-command

@@ -403,11 +403,17 @@ When invoked with prefix, prompt for filepath."
     (ediff-files (pr-review--make-temp-file 'base filepath base-content)
                  (pr-review--make-temp-file 'head filepath head-content))))
 
-(defun pr-review-open-in-default-browser ()
-  "Open current PR in default browser."
+(defun pr-review-open-in-external-browser ()
+  "Open current PR in external browser."
   (interactive)
-  (browse-url-default-browser (or (alist-get 'url pr-review--pr-info)
-                                  (alist-get 'webUrl pr-review--pr-info))))
+  (browse-url-with-browser-kind
+   'external
+   (or (alist-get 'url pr-review--pr-info)
+       (alist-get 'webUrl pr-review--pr-info))))
+
+(define-obsolete-function-alias 'pr-review-open-in-default-browser
+  'pr-review-open-in-external-browser "2026-02-09"
+  "`pr-review-open-in-default-browser' is obsolete; use `pr-review-open-in-external-browser' instead.")
 
 ;; general dispatching functions, call other functions based on current context
 
