@@ -26,6 +26,7 @@
 
 (require 'pr-review-common)
 (require 'ghub)
+(require 'ghub-legacy)
 
 (defcustom pr-review-ghub-auth-name 'emacs-pr-review
   "Ghub auth name used by `pr-review', see `ghub-request' for details."
