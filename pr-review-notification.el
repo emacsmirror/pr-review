@@ -261,17 +261,23 @@ Confirm if there's mark entries."
     (browse-url-with-browser-kind 'external (pr-review--notification-entry-url entry))))
 
 ;;;###autoload
-(defun pr-review-notification ()
-  "Show github notifications in a new buffer."
-  (interactive)
-  (with-current-buffer (get-buffer-create "*pr-review notifications*")
-    (pr-review-notification-mode)
-    (let ((req-args (pr-review--ghub-common-request-args)))
-      (setq-local pr-review--forge (plist-get req-args :forge)
-                  pr-review--host (plist-get req-args :host)))
-    (pr-review--notification-refresh)
-    (tabulated-list-print)
-    (switch-to-buffer (current-buffer))))
+(defun pr-review-notification (&optional host)
+  "Show notifications in a new buffer.
+HOST is the forge host (a key in `pr-review-forges-alist') to use.
+When called interactively with prefix arg, prompt to select a forge.
+Otherwise, the first entry in `pr-review-forges-alist' is used."
+  (interactive (list (completing-read "Select forge: "
+                                      (mapcar #'car pr-review-forges-alist)
+                                      nil t)))
+  (let* ((host (or host (caar pr-review-forges-alist)))
+         (forge (nth 0 (alist-get host pr-review-forges-alist nil nil 'equal))))
+    (with-current-buffer (get-buffer-create (format "*pr-review notifications [%s]*" host))
+      (pr-review-notification-mode)
+      (setq-local pr-review--host host
+                  pr-review--forge forge)
+      (pr-review--notification-refresh)
+      (tabulated-list-print)
+      (switch-to-buffer (current-buffer)))))
 
 (provide 'pr-review-notification)
 ;;; pr-review-notification.el ends here
