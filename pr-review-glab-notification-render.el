@@ -72,5 +72,5 @@
   (let-alist entry .target.webUrl))
 
 
-(provide 'pr-review-glab-notification)
-;;; pr-review-glab-notification.el ends here
+(provide 'pr-review-glab-notification-render)
+;;; pr-review-glab-notification-render.el ends here
