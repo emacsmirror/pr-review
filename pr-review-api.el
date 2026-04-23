@@ -36,11 +36,16 @@
 (defcustom pr-review-forges-alist
   '(("github.com" . (github nil nil))
     ("gitlab.com" . (gitlab nil nil)))
-  "TODO"
+  "Alist mapping host names to forge configurations.
+Each entry is (HOST . (FORGE-TYPE API-HOST USERNAME)).
+FORGE-TYPE is `github' or `gitlab'.
+API-HOST is the API domain string, or nil to read from ghub config.
+USERNAME is the username string, or nil to read from ghub config.
+The first entry is used as the default forge (e.g. for notifications)."
   :group 'pr-review
   :type '(alist :key-type string
                 :value-type (list (choice (const :tag "Github" github)
-                                          (const :tag "Gitlab (not supported yet)" gitlab))
+                                          (const :tag "Gitlab" gitlab))
                                   (choice (const :tag "Read API host domain from ghub config" nil)
                                           (string :tag "API host domain"))
                                   (choice (const :tag "Read username from ghub config" nil)

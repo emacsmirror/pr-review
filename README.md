@@ -1,6 +1,6 @@
 # Emacs PR Review
 
-Review Github Pull Request from Emacs!
+Review Github / GitLab Pull Request (Merge Request) from Emacs!
 
 ![](images/overview.png)
 
@@ -11,25 +11,59 @@ Review Github Pull Request from Emacs!
 
 [![](https://melpa.org/packages/pr-review-badge.svg)](https://melpa.org/#/pr-review)
 
-### Setup github token
+### Setup token
 
 This project uses [ghub](https://magit.vc/manual/ghub/Creating-and-Storing-a-Token.html#Creating-and-Storing-a-Token),
 see its document for more details about how to setup the token.
 
-Simply put, add the following line to `~/.authinfo` (replace `<...>` accordingly):
+#### GitHub
+
+Add the following line to `~/.authinfo` (replace `<...>` accordingly):
 
 ```
 machine api.github.com login <YOUR_USERNAME>^emacs-pr-review password <YOUR_GITHUB_PERSONAL_TOKEN>
 ```
 
+#### GitLab
+
+Add the following line to `~/.authinfo` (replace `<...>` accordingly):
+
+```
+machine gitlab.com/api/v4 login <YOUR_USERNAME>^emacs-pr-review password <YOUR_GITLAB_PERSONAL_TOKEN>
+```
+
+#### Configure forges (`pr-review-forges-alist`)
+
+Multiple GitHub / GitLab instances (including enterprise / self-hosted) are
+configured through a single variable `pr-review-forges-alist`.
+Each entry maps a **host name** to `(FORGE-TYPE API-HOST USERNAME)`:
+
+```elisp
+(setq pr-review-forges-alist
+      '(("github.com"                . (github nil nil))          ;; default, reads api-host & username from ghub config
+        ("gitlab.com"                . (gitlab nil nil))          ;; same for gitlab
+        ("github.corp.my-company.com" . (github "github.corp.my-company.com/api/v3" "my-username"))
+        ("gitlab.internal.dev"        . (gitlab "gitlab.internal.dev/api/v4" "my-username"))))
+```
+
+- `FORGE-TYPE`: `github` or `gitlab`.
+- `API-HOST`: API host domain string, or `nil` to read from ghub config.
+- `USERNAME`: username string, or `nil` to read from ghub config.
+
+The first entry is used as the default forge (e.g. for `pr-review-notification`).
+
+> **Migration note:** `pr-review-ghub-username` and `pr-review-ghub-host` are
+> now obsolete. They still work as fallbacks, but you should migrate to
+> `pr-review-forges-alist`.
+
+<details>
+  <summary>Legacy setup (deprecated)</summary>
+
 You may customize username and api host (for github enterprise instances) using [ghub](https://magit.vc/manual/ghub/Github-Configuration-Variables.html#Github-Configuration-Variables),
 or you can also set `pr-review-ghub-username` and `pr-review-ghub-host` for pr-review only.
 
-<details>
-  <summary>For github enterprise users</summary>
-  
-The detailed setup for different github enterprise sites may vary. Just for reference:
-  
+For github enterprise, just for reference:
+
   1. set pr-review-ghub-host to "github.corp.my-company.com/api/v3"
   2. set pr-review-ghub-username
   3. in ~/.authinfo, use `machine github.corp.my-company.com/api/v3 login my-username^emacs-pr-review password ghp_xxxxxxxxxxxx`
@@ -40,8 +74,8 @@ The detailed setup for different github enterprise sites may vary. Just for refe
 
 This package provides the following entrypoint:
 
-- `M-x pr-review`: open a PR with given URL.
-- `M-x pr-review-notification`: list github notifications in a buffer, and open PRs from it
+- `M-x pr-review`: open a PR / MR with given URL (supports both GitHub and GitLab URLs).
+- `M-x pr-review-notification`: list notifications (GitHub notifications or GitLab To-Do items) in a buffer, and open PRs/MRs from it
 - `M-x pr-review-search-open`: search in github and select a PR from search result.
 - `M-x pr-review-search`: like above, but list results in a buffer
 
@@ -88,7 +122,7 @@ Some other keybindings or commands:
 
 - `C-c C-r`: refresh (reload) current buffer
 - `C-c C-v`: view current changed file under point (either HEAD or BASE version, based on current point) in a separated buffer
-- `C-c C-o`: open this pull request in browser
+- `C-c C-o`: open this pull request in external browser
 - `C-c C-q`: request reviewers
 - `C-c C-l`: set labels
 - `C-c C-j`: set reactions (emojis) for comment or description under current point
@@ -97,6 +131,11 @@ Some other keybindings or commands:
 - `M-x pr-review-select-commit`: select only some commits for review
 
 Evil users will also find some familiar keybindings. See `describe-mode` for more details.
+
+### Customization
+
+- `pr-review-forges-alist`: configure multiple GitHub / GitLab instances (see [Configure forges](#configure-forges-pr-review-forges-alist) above).
+- `pr-review-default-hide-commenter`: a list of author login names whose review comments are collapsed (hidden) by default. Useful for hiding noisy bot comments (e.g. `'("codecov-bot" "dependabot")`). Default is `nil` (show all).
 
 ### Keybindings in PrReviewInput buffer
 
@@ -111,7 +150,7 @@ Recommend using (company-emoji)[https://github.com/dunn/company-emoji] to insert
 
 ### Keybindings in PrReviewNotification buffer
 
-- `RET`: Open the PR (While this buffer lists all types of notifications, only Pull Requests can be opened by this package)
+- `RET`: Open the PR/MR (While this buffer lists all types of notifications, only Pull Requests / Merge Requests can be opened by this package)
 - `C-c C-n` / `C-c C-p` (`gj` / `gk` for evil users): next/prev page
 - Refresh with `revert-buffer` (`gr` for evil users)
 - `C-c C-t`: toggle filters
