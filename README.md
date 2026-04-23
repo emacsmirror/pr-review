@@ -2,6 +2,8 @@
 
 Review Github / GitLab Pull Request (Merge Request) from Emacs!
 
+> **Note:** GitLab support is experimental. Basic features (viewing, commenting, reviewing, notifications) work, but some features may be missing or incomplete.
+
 ![](images/overview.png)
 
 
